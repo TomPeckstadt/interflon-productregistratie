@@ -1,31 +1,28 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  saveRegistration,
-  getRegistrations,
-  saveUsers,
-  getUsers,
-  saveProducts,
-  getProducts,
-  saveLocations,
-  getLocations,
-  savePurposes,
-  getPurposes,
-  type RegistrationEntry,
-} from "@/lib/firebase-clean"
+
+// Eenvoudige interface
+interface RegistrationEntry {
+  id: string
+  user: string
+  product: string
+  location: string
+  purpose: string
+  timestamp: string
+  date: string
+  time: string
+}
 
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
-const DEFAULT_PRODUCTS = ["Laptop Dell XPS", 'Monitor Samsung 24"', "Muis Logitech", "Toetsenbord Mechanical"]
+const DEFAULT_PRODUCTS = ["Laptop Dell XPS", "Monitor Samsung 24", "Muis Logitech", "Toetsenbord Mechanical"]
 const DEFAULT_LOCATIONS = ["Kantoor 1.1", "Kantoor 1.2", "Vergaderzaal A", "Warehouse", "Thuis"]
 const DEFAULT_PURPOSES = ["Presentatie", "Thuiswerken", "Reparatie", "Training", "Demonstratie"]
 
@@ -36,185 +33,26 @@ export default function ProductRegistrationApp() {
   const [purpose, setPurpose] = useState(DEFAULT_PURPOSES[0])
   const [entries, setEntries] = useState<RegistrationEntry[]>([])
   const [showSuccess, setShowSuccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
-  // Beheer states
-  const [users, setUsers] = useState<string[]>(DEFAULT_USERS)
-  const [products, setProducts] = useState<string[]>(DEFAULT_PRODUCTS)
-  const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS)
-  const [purposes, setPurposes] = useState<string[]>(DEFAULT_PURPOSES)
-
-  // Nieuwe item states
-  const [newUserName, setNewUserName] = useState("")
-  const [newProductName, setNewProductName] = useState("")
-  const [newLocationName, setNewLocationName] = useState("")
-  const [newPurposeName, setNewPurposeName] = useState("")
-
-  // Filter en zoek states
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterUser, setFilterUser] = useState("all")
-  const [filterProduct, setFilterProduct] = useState("")
-  const [filterLocation, setFilterLocation] = useState("all")
-  const [filterDateFrom, setFilterDateFrom] = useState("")
-  const [filterDateTo, setFilterDateTo] = useState("")
-  const [sortBy, setSortBy] = useState<"date" | "user" | "product">("date")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-
-  // Laad opgeslagen gegevens
+  // Laad opgeslagen gegevens bij start
   useEffect(() => {
-    loadData()
+    const savedEntries = localStorage.getItem("productRegistrations")
+    if (savedEntries) {
+      setEntries(JSON.parse(savedEntries))
+    }
   }, [])
 
-  const loadData = async () => {
-    setIsLoading(true)
-
-    // Laad registraties
-    try {
-      const { data: firebaseData, error } = await getRegistrations()
-
-      if (!error && firebaseData && firebaseData.length > 0) {
-        setEntries(firebaseData)
-        console.log("✅ Loaded registrations from Firebase")
-      } else {
-        console.log("No Firebase registrations found, using localStorage")
-        const savedEntries = localStorage.getItem("productRegistrations")
-        if (savedEntries) {
-          setEntries(JSON.parse(savedEntries))
-        }
-      }
-    } catch (error) {
-      console.log("Firebase not available for registrations, using localStorage")
-      const savedEntries = localStorage.getItem("productRegistrations")
-      if (savedEntries) {
-        setEntries(JSON.parse(savedEntries))
-      }
-    }
-
-    // Laad gebruikers
-    try {
-      const { data: usersData, error } = await getUsers()
-      if (!error && usersData && usersData.length > 0) {
-        setUsers(usersData)
-        console.log("✅ Loaded users from Firebase")
-      } else {
-        console.log("No Firebase users found, using localStorage")
-        const savedUsers = localStorage.getItem("customUsers")
-        if (savedUsers) {
-          setUsers(JSON.parse(savedUsers))
-        }
-      }
-    } catch (error) {
-      console.log("Firebase not available for users, using localStorage")
-      const savedUsers = localStorage.getItem("customUsers")
-      if (savedUsers) {
-        setUsers(JSON.parse(savedUsers))
-      }
-    }
-
-    // Laad producten
-    try {
-      const { data: productsData, error } = await getProducts()
-      if (!error && productsData && productsData.length > 0) {
-        setProducts(productsData)
-        console.log("✅ Loaded products from Firebase")
-      } else {
-        console.log("No Firebase products found, using localStorage")
-        const savedProducts = localStorage.getItem("customProducts")
-        if (savedProducts) {
-          setProducts(JSON.parse(savedProducts))
-        }
-      }
-    } catch (error) {
-      console.log("Firebase not available for products, using localStorage")
-      const savedProducts = localStorage.getItem("customProducts")
-      if (savedProducts) {
-        setProducts(JSON.parse(savedProducts))
-      }
-    }
-
-    // Laad locaties
-    try {
-      const { data: locationsData, error } = await getLocations()
-      if (!error && locationsData && locationsData.length > 0) {
-        setLocations(locationsData)
-        console.log("✅ Loaded locations from Firebase")
-      } else {
-        console.log("No Firebase locations found, using localStorage")
-        const savedLocations = localStorage.getItem("customLocations")
-        if (savedLocations) {
-          setLocations(JSON.parse(savedLocations))
-        }
-      }
-    } catch (error) {
-      console.log("Firebase not available for locations, using localStorage")
-      const savedLocations = localStorage.getItem("customLocations")
-      if (savedLocations) {
-        setLocations(JSON.parse(savedLocations))
-      }
-    }
-
-    // Laad doelen
-    try {
-      const { data: purposesData, error } = await getPurposes()
-      if (!error && purposesData && purposesData.length > 0) {
-        setPurposes(purposesData)
-        console.log("✅ Loaded purposes from Firebase")
-      } else {
-        console.log("No Firebase purposes found, using localStorage")
-        const savedPurposes = localStorage.getItem("customPurposes")
-        if (savedPurposes) {
-          setPurposes(JSON.parse(savedPurposes))
-        }
-      }
-    } catch (error) {
-      console.log("Firebase not available for purposes, using localStorage")
-      const savedPurposes = localStorage.getItem("customPurposes")
-      if (savedPurposes) {
-        setPurposes(JSON.parse(savedPurposes))
-      }
-    }
-
-    setIsLoading(false)
-  }
-
-  // Sla gegevens op
-  const saveToStorage = async (newEntry: Omit<RegistrationEntry, "id" | "created_at">) => {
-    try {
-      const { data: firebaseData, error } = await saveRegistration(newEntry)
-
-      if (!error && firebaseData) {
-        const updatedEntries = [firebaseData, ...entries]
-        setEntries(updatedEntries)
-        localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
-        console.log("✅ Registration saved to Firebase")
-        return
-      }
-    } catch (error) {
-      console.log("Firebase not available, using localStorage")
-    }
-
-    // Fallback naar localStorage
-    const localEntry: RegistrationEntry = {
-      ...newEntry,
-      id: Date.now().toString(),
-    }
-    const updatedEntries = [localEntry, ...entries]
-    localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
-    setEntries(updatedEntries)
-  }
-
   // Registreer nieuw item
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!currentUser || !selectedProduct || !location || !purpose) {
       return
     }
 
-    setIsLoading(true)
-
     const now = new Date()
-    const newEntry = {
+    const newEntry: RegistrationEntry = {
+      id: Date.now().toString(),
       user: currentUser,
       product: selectedProduct,
       location,
@@ -222,252 +60,20 @@ export default function ProductRegistrationApp() {
       timestamp: now.toISOString(),
       date: now.toLocaleDateString("nl-NL"),
       time: now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }),
-      photo_url: "",
-      qr_code: "",
     }
 
-    await saveToStorage(newEntry)
+    const updatedEntries = [newEntry, ...entries]
+    setEntries(updatedEntries)
+    localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
 
     // Reset form
-    setSelectedProduct("")
-    setLocation("")
-    setPurpose("")
+    setSelectedProduct(DEFAULT_PRODUCTS[0])
+    setLocation(DEFAULT_LOCATIONS[0])
+    setPurpose(DEFAULT_PURPOSES[0])
 
     // Toon success bericht
     setShowSuccess(true)
     setTimeout(() => setShowSuccess(false), 3000)
-    setIsLoading(false)
-  }
-
-  // Export naar CSV
-  const exportToCSV = () => {
-    const filteredEntries = getFilteredAndSortedEntries()
-    const headers = ["Datum", "Tijd", "Gebruiker", "Product", "Locatie", "Doel"]
-    const csvContent = [
-      headers.join(","),
-      ...filteredEntries.map((entry) =>
-        [
-          entry.date,
-          entry.time,
-          `"${entry.user}"`,
-          `"${entry.product}"`,
-          `"${entry.location}"`,
-          `"${entry.purpose}"`,
-        ].join(","),
-      ),
-    ].join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-
-    const filterSuffix = searchQuery || filterUser || filterProduct || filterLocation ? "-gefilterd" : ""
-    link.setAttribute("download", `product-registraties${filterSuffix}-${new Date().toISOString().split("T")[0]}.csv`)
-
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // Voeg nieuwe gebruiker toe
-  const addNewUser = async () => {
-    if (newUserName.trim() && !users.includes(newUserName.trim())) {
-      const updatedUsers = [...users, newUserName.trim()]
-      setUsers(updatedUsers)
-
-      try {
-        await saveUsers(updatedUsers)
-        console.log("✅ Users saved to Firebase")
-      } catch (error) {
-        console.error("Error saving users to Firebase:", error)
-      }
-
-      localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
-      setNewUserName("")
-    }
-  }
-
-  // Voeg nieuw product toe
-  const addNewProduct = async () => {
-    if (newProductName.trim() && !products.includes(newProductName.trim())) {
-      const updatedProducts = [...products, newProductName.trim()]
-      setProducts(updatedProducts)
-
-      try {
-        await saveProducts(updatedProducts)
-        console.log("✅ Products saved to Firebase")
-      } catch (error) {
-        console.error("Error saving products to Firebase:", error)
-      }
-
-      localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
-      setNewProductName("")
-    }
-  }
-
-  // Voeg nieuwe locatie toe
-  const addNewLocation = async () => {
-    if (newLocationName.trim() && !locations.includes(newLocationName.trim())) {
-      const updatedLocations = [...locations, newLocationName.trim()]
-      setLocations(updatedLocations)
-
-      try {
-        await saveLocations(updatedLocations)
-        console.log("✅ Locations saved to Firebase")
-      } catch (error) {
-        console.error("Error saving locations to Firebase:", error)
-      }
-
-      localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
-      setNewLocationName("")
-    }
-  }
-
-  // Voeg nieuw doel toe
-  const addNewPurpose = async () => {
-    if (newPurposeName.trim() && !purposes.includes(newPurposeName.trim())) {
-      const updatedPurposes = [...purposes, newPurposeName.trim()]
-      setPurposes(updatedPurposes)
-
-      try {
-        await savePurposes(updatedPurposes)
-        console.log("✅ Purposes saved to Firebase")
-      } catch (error) {
-        console.error("Error saving purposes to Firebase:", error)
-      }
-
-      localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
-      setNewPurposeName("")
-    }
-  }
-
-  // Verwijder item
-  const removeUser = async (userToRemove: string) => {
-    const updatedUsers = users.filter((user) => user !== userToRemove)
-    setUsers(updatedUsers)
-
-    try {
-      await saveUsers(updatedUsers)
-    } catch (error) {
-      console.error("Error saving users to Firebase after removal:", error)
-    }
-
-    localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
-  }
-
-  const removeProduct = async (productToRemove: string) => {
-    const updatedProducts = products.filter((product) => product !== productToRemove)
-    setProducts(updatedProducts)
-
-    try {
-      await saveProducts(updatedProducts)
-    } catch (error) {
-      console.error("Error saving products to Firebase after removal:", error)
-    }
-
-    localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
-  }
-
-  const removeLocation = async (locationToRemove: string) => {
-    const updatedLocations = locations.filter((loc) => loc !== locationToRemove)
-    setLocations(updatedLocations)
-
-    try {
-      await saveLocations(updatedLocations)
-    } catch (error) {
-      console.error("Error saving locations to Firebase after removal:", error)
-    }
-
-    localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
-  }
-
-  const removePurpose = async (purposeToRemove: string) => {
-    const updatedPurposes = purposes.filter((p) => p !== purposeToRemove)
-    setPurposes(updatedPurposes)
-
-    try {
-      await savePurposes(updatedPurposes)
-    } catch (error) {
-      console.error("Error saving purposes to Firebase after removal:", error)
-    }
-
-    localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
-  }
-
-  // Filter en zoek functies
-  const getFilteredAndSortedEntries = () => {
-    const filtered = entries.filter((entry) => {
-      const searchMatch =
-        !searchQuery ||
-        entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const userMatch = !filterUser || filterUser === "all" || entry.user === filterUser
-      const productMatch = !filterProduct || entry.product.toLowerCase().includes(filterProduct.toLowerCase())
-      const locationMatch = !filterLocation || filterLocation === "all" || entry.location === filterLocation
-
-      let dateMatch = true
-      if (filterDateFrom || filterDateTo) {
-        const entryDate = new Date(entry.timestamp)
-        if (filterDateFrom) {
-          const fromDate = new Date(filterDateFrom)
-          dateMatch = dateMatch && entryDate >= fromDate
-        }
-        if (filterDateTo) {
-          const toDate = new Date(filterDateTo + "T23:59:59")
-          dateMatch = dateMatch && entryDate <= toDate
-        }
-      }
-
-      return searchMatch && userMatch && productMatch && locationMatch && dateMatch
-    })
-
-    filtered.sort((a, b) => {
-      let comparison = 0
-
-      switch (sortBy) {
-        case "date":
-          comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-          break
-        case "user":
-          comparison = a.user.localeCompare(b.user)
-          break
-        case "product":
-          comparison = a.product.localeCompare(b.product)
-          break
-      }
-
-      return sortOrder === "asc" ? comparison : -comparison
-    })
-
-    return filtered
-  }
-
-  // Wis alle filters
-  const clearAllFilters = () => {
-    setSearchQuery("")
-    setFilterUser("all")
-    setFilterProduct("")
-    setFilterLocation("all")
-    setFilterDateFrom("")
-    setFilterDateTo("")
-    setSortBy("date")
-    setSortOrder("desc")
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Laden...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -475,80 +81,153 @@ export default function ProductRegistrationApp() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-amber-500 rounded-lg flex items-center justify-center">
-                <div className="h-10 w-10 text-white">📦</div>
-              </div>
-              <div className="border-l border-gray-300 pl-4">
-                <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
-                <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-amber-500 rounded-lg flex items-center justify-center">
+              <span className="text-2xl text-white">📦</span>
             </div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <span>Powered by Interflon</span>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
+              <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-8">
         {showSuccess && (
           <Alert className="mb-6 border-green-200 bg-green-50">
-            <div className="h-4 w-4 text-green-600">✓</div>
-            <AlertDescription className="text-green-800">Product succesvol geregistreerd!</AlertDescription>
+            <AlertDescription className="text-green-800">
+              ✅ Product succesvol geregistreerd!
+            </AlertDescription>
           </Alert>
         )}
 
-        <Tabs defaultValue="register" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200">
-            <TabsTrigger value="register">Registreren</TabsTrigger>
-            <TabsTrigger value="history">Geschiedenis</TabsTrigger>
-            <TabsTrigger value="users">Gebruikers</TabsTrigger>
-            <TabsTrigger value="products">Producten</TabsTrigger>
-            <TabsTrigger value="locations">Locaties</TabsTrigger>
-            <TabsTrigger value="purposes">Doelen</TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Registratie Formulier */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Nieuw Product Registreren</CardTitle>
+              <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Gebruiker */}
+                <div className="space-y-2">
+                  <Label htmlFor="user">Gebruiker</Label>
+                  <Select value={currentUser} onValueChange={setCurrentUser} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecteer je naam" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_USERS.map((user) => (
+                        <SelectItem key={user} value={user}>
+                          {user}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span>📦</span>
-                  Nieuw Product Registreren
-                </CardTitle>
-                <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Gebruiker */}
-                  <div className="space-y-2">
-                    <Label htmlFor="user" className="flex items-center gap-2">
-                      <span>👤</span>
-                      Gebruiker
-                    </Label>
-                    <Select value={currentUser} onValueChange={setCurrentUser} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecteer je naam" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user) => (
-                          <SelectItem key={user} value={user}>
-                            {user}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Product */}
+                <div className="space-y-2">
+                  <Label htmlFor="product">Product</Label>
+                  <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecteer een product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_PRODUCTS.map((product) => (
+                        <SelectItem key={product} value={product}>
+                          {product}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  {/* Product */}
-                  <div className="space-y-2">
-                    <Label htmlFor="product" className="flex items-center gap-2">
-                      <span>📦</span>
-                      Product
-                    </Label>
-                    <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een product" />
-                      </SelectTrigger>
-               
+                {/* Locatie */}
+                <div className="space-y-2">
+                  <Label htmlFor="location">Locatie</Label>
+                  <Select value={location} onValueChange={setLocation} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecteer een locatie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_LOCATIONS.map((loc) => (
+                        <SelectItem key={loc} value={loc}>
+                          {loc}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Doel */}
+                <div className="space-y-2">
+                  <Label htmlFor="purpose">Doel/Toepassing</Label>
+                  <Select value={purpose} onValueChange={setPurpose} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecteer een doel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_PURPOSES.map((purposeItem) => (
+                        <SelectItem key={purposeItem} value={purposeItem}>
+                          {purposeItem}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700" size="lg">
+                  💾 Registreren
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Geschiedenis */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recente Registraties</CardTitle>
+              <CardDescription>Overzicht van de laatste {entries.length} registraties</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {entries.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Nog geen registraties. Begin met het registreren van een product!
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {entries.slice(0, 10).map((entry) => (
+                    <div key={entry.id} className="border rounded-lg p-3 bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-amber-700">{entry.user}</span>
+                        <span className="text-xs text-gray-500">
+                          {entry.date} om {entry.time}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold">{entry.product}</h4>
+                      <div className="text-sm text-gray-600 mt-1">
+                        📍 {entry.location} • 🎯 {entry.purpose}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-12 border-t border-gray-200 bg-white py-6">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-sm text-gray-600">
+            © {new Date().getFullYear()} Interflon. Alle rechten voorbehouden.
+          </p>
+        </div>
+      </footer>
+    </div>
+  )
+}
