@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js"
 
+// Voeg deze debug functie toe aan het begin van het bestand, direct na de import statement
+function debugLog(message: string, data?: any) {
+  console.log(`[DEBUG ${new Date().toISOString()}] ${message}`, data || "")
+}
+
 // Supabase client voor client-side gebruik (singleton pattern)
 let supabaseClient: ReturnType<typeof createClient> | null = null
 
@@ -7,6 +12,11 @@ export const getSupabaseClient = () => {
   if (!supabaseClient) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    console.log("Supabase configuratie:", {
+      url: supabaseUrl ? "Aanwezig" : "Ontbreekt",
+      key: supabaseAnonKey ? "Aanwezig" : "Ontbreekt",
+    })
 
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error("Supabase URL of Anon Key ontbreekt. Controleer je omgevingsvariabelen.")
@@ -23,7 +33,23 @@ export const getSupabaseClient = () => {
       } as any
     }
 
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+    try {
+      console.log("Supabase client wordt geïnitialiseerd...")
+      supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+      console.log("Supabase client succesvol geïnitialiseerd")
+    } catch (error) {
+      console.error("Fout bij initialiseren Supabase client:", error)
+      return {
+        from: () => ({
+          select: () => ({ data: [], error: new Error("Supabase initialisatie mislukt") }),
+          insert: () => ({ data: null, error: new Error("Supabase initialisatie mislukt") }),
+          delete: () => ({ error: new Error("Supabase initialisatie mislukt") }),
+        }),
+        channel: () => ({
+          on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+        }),
+      } as any
+    }
   }
   return supabaseClient
 }
@@ -40,7 +66,7 @@ export const createServerSupabaseClient = () => {
 export interface Product {
   id?: string
   name: string
-  qrcode?: string
+  qrcode?: string // Aangepast naar lowercase om overeen te komen met de database
   created_at?: string
 }
 
@@ -53,7 +79,7 @@ export interface RegistrationEntry {
   timestamp: string
   date: string
   time: string
-  qrcode?: string
+  qrcode?: string // Aangepast naar lowercase om overeen te komen met de database
   created_at?: string
 }
 
@@ -82,16 +108,25 @@ export async function saveProduct(product: Product) {
   return { data: data?.[0] || null, error: null }
 }
 
+// Wijzig de deleteProduct functie om meer debug informatie te tonen:
 export async function deleteProduct(id: string) {
+  debugLog("deleteProduct aangeroepen met ID:", id)
   const supabase = getSupabaseClient()
-  const { error } = await supabase.from("products").delete().eq("id", id)
 
-  if (error) {
-    console.error("Error deleting product:", error)
+  try {
+    const { error } = await supabase.from("products").delete().eq("id", id)
+
+    if (error) {
+      console.error("Error deleting product:", error)
+      return { success: false, error }
+    }
+
+    debugLog("Product succesvol verwijderd met ID:", id)
+    return { success: true, error: null }
+  } catch (error) {
+    console.error("Onverwachte fout bij verwijderen product:", error)
     return { success: false, error }
   }
-
-  return { success: true, error: null }
 }
 
 export async function fetchUsers() {
@@ -106,28 +141,47 @@ export async function fetchUsers() {
   return { data: data?.map((user) => user.name) || [], error: null }
 }
 
+// Wijzig de saveUser functie om meer debug informatie te tonen:
 export async function saveUser(name: string) {
+  debugLog("saveUser aangeroepen met:", name)
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.from("users").insert([{ name }]).select()
 
-  if (error) {
-    console.error("Error saving user:", error)
+  try {
+    debugLog("Bezig met opslaan van gebruiker...")
+    const { data, error } = await supabase.from("users").insert([{ name }]).select()
+
+    if (error) {
+      console.error("Database error bij opslaan gebruiker:", error)
+      return { data: null, error }
+    }
+
+    debugLog("Gebruiker succesvol opgeslagen:", data)
+    return { data: data?.[0] || null, error: null }
+  } catch (error) {
+    console.error("Onverwachte fout bij opslaan gebruiker:", error)
     return { data: null, error }
   }
-
-  return { data: data?.[0] || null, error: null }
 }
 
 export async function deleteUser(name: string) {
+  console.log("deleteUser aangeroepen met:", name)
   const supabase = getSupabaseClient()
-  const { error } = await supabase.from("users").delete().eq("name", name)
 
-  if (error) {
-    console.error("Error deleting user:", error)
+  try {
+    console.log("Bezig met verwijderen van gebruiker...")
+    const { error } = await supabase.from("users").delete().eq("name", name)
+
+    if (error) {
+      console.error("Database error bij verwijderen gebruiker:", error)
+      return { success: false, error }
+    }
+
+    console.log("Gebruiker succesvol verwijderd")
+    return { success: true, error: null }
+  } catch (error) {
+    console.error("Onverwachte fout bij verwijderen gebruiker:", error)
     return { success: false, error }
   }
-
-  return { success: true, error: null }
 }
 
 export async function fetchLocations() {
@@ -226,53 +280,147 @@ export async function saveRegistration(registration: Omit<RegistrationEntry, "id
   return { data: data?.[0] || null, error: null }
 }
 
-// Realtime subscriptions
-export function subscribeToProducts(callback: (products: Product[]) => void) {
-  const supabase = getSupabaseClient()
-
-  return supabase
-    .channel("products-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, async () => {
-      const { data } = await fetchProducts()
-      if (data) callback(data)
-    })
-    .subscribe()
-}
-
+// Wijzig de subscribeToUsers functie als volgt:
 export function subscribeToUsers(callback: (users: string[]) => void) {
+  debugLog("Setting up users subscription")
   const supabase = getSupabaseClient()
 
-  return supabase
-    .channel("users-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "users" }, async () => {
-      const { data } = await fetchUsers()
-      if (data) callback(data)
-    })
-    .subscribe()
+  try {
+    const subscription = supabase
+      .channel("users-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, async (payload) => {
+        debugLog("Users change detected:", payload)
+        const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching updated users:", error)
+          return
+        }
+
+        if (data) {
+          const userNames = data.map((user) => user.name)
+          debugLog("Updated users list:", userNames)
+          callback(userNames)
+        }
+      })
+      .subscribe((status) => {
+        debugLog(`Users subscription status: ${status}`)
+      })
+
+    return subscription
+  } catch (error) {
+    console.error("Error setting up users subscription:", error)
+    return {
+      unsubscribe: () => {},
+    }
+  }
 }
 
+// Wijzig de subscribeToProducts functie op dezelfde manier:
+export function subscribeToProducts(callback: (products: Product[]) => void) {
+  debugLog("Setting up products subscription")
+  const supabase = getSupabaseClient()
+
+  try {
+    const subscription = supabase
+      .channel("products-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, async (payload) => {
+        debugLog("Products change detected:", payload)
+        const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching updated products:", error)
+          return
+        }
+
+        if (data) {
+          debugLog("Updated products list:", data)
+          callback(data)
+        }
+      })
+      .subscribe((status) => {
+        debugLog(`Products subscription status: ${status}`)
+      })
+
+    return subscription
+  } catch (error) {
+    console.error("Error setting up products subscription:", error)
+    return {
+      unsubscribe: () => {},
+    }
+  }
+}
+
+// Wijzig de subscribeToLocations functie op dezelfde manier:
 export function subscribeToLocations(callback: (locations: string[]) => void) {
+  debugLog("Setting up locations subscription")
   const supabase = getSupabaseClient()
 
-  return supabase
-    .channel("locations-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, async () => {
-      const { data } = await fetchLocations()
-      if (data) callback(data)
-    })
-    .subscribe()
+  try {
+    const subscription = supabase
+      .channel("locations-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, async (payload) => {
+        debugLog("Locations change detected:", payload)
+        const { data, error } = await supabase.from("locations").select("*").order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching updated locations:", error)
+          return
+        }
+
+        if (data) {
+          const locationNames = data.map((location) => location.name)
+          debugLog("Updated locations list:", locationNames)
+          callback(locationNames)
+        }
+      })
+      .subscribe((status) => {
+        debugLog(`Locations subscription status: ${status}`)
+      })
+
+    return subscription
+  } catch (error) {
+    console.error("Error setting up locations subscription:", error)
+    return {
+      unsubscribe: () => {},
+    }
+  }
 }
 
+// Wijzig de subscribeToPurposes functie op dezelfde manier:
 export function subscribeToPurposes(callback: (purposes: string[]) => void) {
+  debugLog("Setting up purposes subscription")
   const supabase = getSupabaseClient()
 
-  return supabase
-    .channel("purposes-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "purposes" }, async () => {
-      const { data } = await fetchPurposes()
-      if (data) callback(data)
-    })
-    .subscribe()
+  try {
+    const subscription = supabase
+      .channel("purposes-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "purposes" }, async (payload) => {
+        debugLog("Purposes change detected:", payload)
+        const { data, error } = await supabase.from("purposes").select("*").order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching updated purposes:", error)
+          return
+        }
+
+        if (data) {
+          const purposeNames = data.map((purpose) => purpose.name)
+          debugLog("Updated purposes list:", purposeNames)
+          callback(purposeNames)
+        }
+      })
+      .subscribe((status) => {
+        debugLog(`Purposes subscription status: ${status}`)
+      })
+
+    return subscription
+  } catch (error) {
+    console.error("Error setting up purposes subscription:", error)
+    return {
+      unsubscribe: () => {},
+    }
+  }
 }
 
 export function subscribeToRegistrations(callback: (registrations: RegistrationEntry[]) => void) {
