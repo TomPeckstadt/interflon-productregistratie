@@ -1,6 +1,6 @@
 {
   "name": "Dematic Product Registratie",
-  "short_name": "Product Reg",
+  "short_name": "Dematic Reg",
   "description": "Product registratie systeem voor Dematic",
   "start_url": "/",
   "display": "standalone",

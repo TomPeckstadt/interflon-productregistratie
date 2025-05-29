@@ -295,15 +295,23 @@ export default function ProductRegistrationApp() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Product Registratie</h1>
-            <p className="text-gray-600">Registreer product gebruik en locatie</p>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <img src="/dematic-logo.png" alt="Dematic Logo" className="h-20 w-auto" />
+              <div className="border-l border-gray-300 pl-4">
+                <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
+                <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
+              <span>Powered by Dematic</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-4">
         {showSuccess && (
           <Alert className="mb-6 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -323,7 +331,7 @@ export default function ProductRegistrationApp() {
             <Card className="max-w-2xl mx-auto">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-blue-500" />
+                  <Package className="h-5 w-5 text-amber-500" />
                   Nieuw Product Registreren
                 </CardTitle>
                 <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
@@ -333,7 +341,7 @@ export default function ProductRegistrationApp() {
                   {/* Gebruiker */}
                   <div className="space-y-2">
                     <Label htmlFor="user" className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-blue-500" />
+                      <User className="h-4 w-4 text-amber-500" />
                       Gebruiker
                     </Label>
                     <Select value={currentUser} onValueChange={setCurrentUser} required>
@@ -353,7 +361,7 @@ export default function ProductRegistrationApp() {
                   {/* Product */}
                   <div className="space-y-2">
                     <Label htmlFor="product" className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-blue-500" />
+                      <Package className="h-4 w-4 text-amber-500" />
                       Product
                     </Label>
                     <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
@@ -373,7 +381,7 @@ export default function ProductRegistrationApp() {
                   {/* Locatie */}
                   <div className="space-y-2">
                     <Label htmlFor="location" className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-blue-500" />
+                      <MapPin className="h-4 w-4 text-amber-500" />
                       Locatie
                     </Label>
                     <Select value={location} onValueChange={setLocation} required>
@@ -393,7 +401,7 @@ export default function ProductRegistrationApp() {
                   {/* Doel */}
                   <div className="space-y-2">
                     <Label htmlFor="purpose" className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-blue-500" />
+                      <Target className="h-4 w-4 text-amber-500" />
                       Doel/Toepassing
                     </Label>
                     <Select value={purpose} onValueChange={setPurpose} required>
@@ -410,7 +418,7 @@ export default function ProductRegistrationApp() {
                     </Select>
                   </div>
 
-                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
+                  <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700" size="lg">
                     <Save className="h-4 w-4 mr-2" />
                     Registreren
                   </Button>
@@ -425,7 +433,7 @@ export default function ProductRegistrationApp() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <History className="h-5 w-5 text-blue-500" />
+                      <History className="h-5 w-5 text-amber-500" />
                       Registratie Geschiedenis
                     </CardTitle>
                     <CardDescription>
@@ -574,7 +582,7 @@ export default function ProductRegistrationApp() {
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
                                 {entry.user}
                               </Badge>
                               <span className="text-sm text-gray-500">
@@ -584,11 +592,11 @@ export default function ProductRegistrationApp() {
                             <h3 className="font-semibold text-lg">{entry.product}</h3>
                             <div className="flex items-center gap-4 text-sm text-gray-600">
                               <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3 text-blue-500" />
+                                <MapPin className="h-3 w-3 text-amber-500" />
                                 {entry.location}
                               </span>
                               <span className="flex items-center gap-1">
-                                <Target className="h-3 w-3 text-blue-500" />
+                                <Target className="h-3 w-3 text-amber-500" />
                                 {entry.purpose}
                               </span>
                             </div>
@@ -608,7 +616,7 @@ export default function ProductRegistrationApp() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-blue-500" />
+                    <UserPlus className="h-5 w-5 text-amber-500" />
                     Nieuwe Gebruiker Toevoegen
                   </CardTitle>
                 </CardHeader>
@@ -620,7 +628,11 @@ export default function ProductRegistrationApp() {
                       onChange={(e) => setNewUserName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewUser()}
                     />
-                    <Button onClick={addNewUser} disabled={!newUserName.trim()}>
+                    <Button
+                      onClick={addNewUser}
+                      disabled={!newUserName.trim()}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Toevoegen
                     </Button>
@@ -660,7 +672,7 @@ export default function ProductRegistrationApp() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-blue-500" />
+                    <Package className="h-5 w-5 text-amber-500" />
                     Nieuw Product Toevoegen
                   </CardTitle>
                 </CardHeader>
@@ -672,7 +684,11 @@ export default function ProductRegistrationApp() {
                       onChange={(e) => setNewProductName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
                     />
-                    <Button onClick={addNewProduct} disabled={!newProductName.trim()}>
+                    <Button
+                      onClick={addNewProduct}
+                      disabled={!newProductName.trim()}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
                       <Package className="h-4 w-4 mr-2" />
                       Toevoegen
                     </Button>
@@ -712,7 +728,7 @@ export default function ProductRegistrationApp() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-500" />
+                    <MapPin className="h-5 w-5 text-amber-500" />
                     Nieuwe Locatie Toevoegen
                   </CardTitle>
                 </CardHeader>
@@ -724,7 +740,11 @@ export default function ProductRegistrationApp() {
                       onChange={(e) => setNewLocationName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewLocation()}
                     />
-                    <Button onClick={addNewLocation} disabled={!newLocationName.trim()}>
+                    <Button
+                      onClick={addNewLocation}
+                      disabled={!newLocationName.trim()}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
                       <MapPin className="h-4 w-4 mr-2" />
                       Toevoegen
                     </Button>
@@ -742,7 +762,7 @@ export default function ProductRegistrationApp() {
                     {locations.map((loc) => (
                       <div key={loc} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-blue-500" />
+                          <MapPin className="h-4 w-4 text-amber-500" />
                           <span className="font-medium">{loc}</span>
                         </div>
                         <Button
@@ -762,6 +782,29 @@ export default function ProductRegistrationApp() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-12 border-t border-gray-200 bg-white py-6">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center mb-4 md:mb-0">
+              <img src="/dematic-logo.png" alt="Dematic Logo" className="h-8 w-auto mr-3" />
+              <p className="text-sm text-gray-600">© {new Date().getFullYear()} Dematic. Alle rechten voorbehouden.</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Privacy
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Voorwaarden
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Contact
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
