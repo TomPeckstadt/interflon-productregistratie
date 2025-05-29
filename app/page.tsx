@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { QRScanner } from "@/components/qr-scanner"
 import { PhotoUpload } from "@/components/photo-upload"
 import { StatisticsDashboard } from "@/components/statistics-dashboard"
+import { ExcelImporter } from "@/components/excel-importer"
 import { saveRegistration, getRegistrations, type RegistrationEntry } from "@/lib/supabase"
 
 // Standaard gegevens
@@ -285,6 +286,31 @@ export default function ProductRegistrationApp() {
     }
   }
 
+  // Import functies
+  const handleUsersImport = (newUsers: string[]) => {
+    const updatedUsers = [...users, ...newUsers]
+    setUsers(updatedUsers)
+    localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
+  }
+
+  const handleProductsImport = (newProducts: string[]) => {
+    const updatedProducts = [...products, ...newProducts]
+    setProducts(updatedProducts)
+    localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
+  }
+
+  const handleLocationsImport = (newLocations: string[]) => {
+    const updatedLocations = [...locations, ...newLocations]
+    setLocations(updatedLocations)
+    localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
+  }
+
+  const handlePurposesImport = (newPurposes: string[]) => {
+    const updatedPurposes = [...purposes, ...newPurposes]
+    setPurposes(updatedPurposes)
+    localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
+  }
+
   // Verwijder item
   const removeUser = (userToRemove: string) => {
     const updatedUsers = users.filter((user) => user !== userToRemove)
@@ -418,13 +444,14 @@ export default function ProductRegistrationApp() {
         )}
 
         <Tabs defaultValue="register" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200">
+          <TabsList className="grid w-full grid-cols-7 bg-white border border-gray-200">
             <TabsTrigger value="register">Registreren</TabsTrigger>
             <TabsTrigger value="history">Geschiedenis</TabsTrigger>
             <TabsTrigger value="statistics">Statistieken</TabsTrigger>
             <TabsTrigger value="users">Gebruikers</TabsTrigger>
             <TabsTrigger value="products">Producten</TabsTrigger>
             <TabsTrigger value="locations">Locaties</TabsTrigger>
+            <TabsTrigger value="purposes">Doelen</TabsTrigger>
           </TabsList>
 
           <TabsContent value="register">
@@ -762,6 +789,15 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="users">
             <div className="space-y-6">
+              {/* Excel Import */}
+              <ExcelImporter
+                title="Gebruikers Importeren"
+                description="Importeer meerdere gebruikers tegelijk vanuit een CSV of TXT bestand"
+                onImport={handleUsersImport}
+                existingItems={users}
+                type="users"
+              />
+
               {/* Nieuwe gebruiker toevoegen */}
               <Card>
                 <CardHeader>
@@ -818,6 +854,15 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="products">
             <div className="space-y-6">
+              {/* Excel Import */}
+              <ExcelImporter
+                title="Producten Importeren"
+                description="Importeer meerdere producten tegelijk vanuit een CSV of TXT bestand"
+                onImport={handleProductsImport}
+                existingItems={products}
+                type="products"
+              />
+
               {/* Nieuw product toevoegen */}
               <Card>
                 <CardHeader>
@@ -874,6 +919,15 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="locations">
             <div className="space-y-6">
+              {/* Excel Import */}
+              <ExcelImporter
+                title="Locaties Importeren"
+                description="Importeer meerdere locaties tegelijk vanuit een CSV of TXT bestand"
+                onImport={handleLocationsImport}
+                existingItems={locations}
+                type="locations"
+              />
+
               {/* Nieuwe locatie toevoegen */}
               <Card>
                 <CardHeader>
@@ -914,13 +968,79 @@ export default function ProductRegistrationApp() {
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-amber-500" />
                           <span className="font-medium">{loc}</span>
-
-                          <span className="font-medium">{loc}</span>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => removeLocation(loc)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="purposes">
+            <div className="space-y-6">
+              {/* Excel Import */}
+              <ExcelImporter
+                title="Doelen Importeren"
+                description="Importeer meerdere doelen tegelijk vanuit een CSV of TXT bestand"
+                onImport={handlePurposesImport}
+                existingItems={purposes}
+                type="purposes"
+              />
+
+              {/* Nieuw doel toevoegen */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-amber-500" />
+                    Nieuw Doel Toevoegen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Voer doel/toepassing in"
+                      value={newPurposeName}
+                      onChange={(e) => setNewPurposeName(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addNewPurpose()}
+                    />
+                    <Button
+                      onClick={addNewPurpose}
+                      disabled={!newPurposeName.trim()}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Toevoegen
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Doelen lijst */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Doelen Beheren ({purposes.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {purposes.map((purposeItem) => (
+                      <div key={purposeItem} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-amber-500" />
+                          <span className="font-medium">{purposeItem}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removePurpose(purposeItem)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
