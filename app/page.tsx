@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import Image from "next/image"
 
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
@@ -296,20 +297,45 @@ export default function ProductRegistrationApp() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-amber-500 rounded-lg flex items-center justify-center">
-              <span className="text-2xl text-white">📦</span>
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            {/* Logo en titel sectie */}
+            <div className="flex flex-col lg:flex-row items-center gap-6">
+              {/* DEMATIC Logo */}
+              <div className="flex-shrink-0">
+                <Image
+                  src="/images/dematic-logo.png"
+                  alt="DEMATIC Logo"
+                  width={200}
+                  height={80}
+                  className="h-16 lg:h-20 w-auto"
+                  priority
+                />
+              </div>
+
+              {/* Divider lijn */}
+              <div className="hidden lg:block w-px h-16 bg-gray-300"></div>
+
+              {/* App titel */}
+              <div className="text-center lg:text-left">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Product Registratie</h1>
+                <p className="text-sm lg:text-base text-gray-600 mt-1">Registreer product gebruik en locatie</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
-              <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
+
+            {/* Status info */}
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Systeem actief</span>
+              </div>
+              <div className="hidden md:block">{entries.length} registraties</div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-6">
         {showSuccess && (
           <Alert className="mb-6 border-green-200 bg-green-50">
             <AlertDescription className="text-green-800">✅ Product succesvol geregistreerd!</AlertDescription>
@@ -317,94 +343,119 @@ export default function ProductRegistrationApp() {
         )}
 
         <Tabs defaultValue="register" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200">
-            <TabsTrigger value="register">Registreren</TabsTrigger>
-            <TabsTrigger value="history">Geschiedenis ({entries.length})</TabsTrigger>
-            <TabsTrigger value="users">Gebruikers ({users.length})</TabsTrigger>
-            <TabsTrigger value="products">Producten ({products.length})</TabsTrigger>
-            <TabsTrigger value="locations">Locaties ({locations.length})</TabsTrigger>
-            <TabsTrigger value="purposes">Doelen ({purposes.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200 shadow-sm">
+            <TabsTrigger
+              value="register"
+              className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700"
+            >
+              Registreren
+            </TabsTrigger>
+            <TabsTrigger value="history" className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700">
+              Geschiedenis ({entries.length})
+            </TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700">
+              Gebruikers ({users.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="products"
+              className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700"
+            >
+              Producten ({products.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="locations"
+              className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700"
+            >
+              Locaties ({locations.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="purposes"
+              className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700"
+            >
+              Doelen ({purposes.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle>📦 Nieuw Product Registreren</CardTitle>
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">📦 Nieuw Product Registreren</CardTitle>
                 <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>👤 Gebruiker</Label>
-                    <Select value={currentUser} onValueChange={setCurrentUser} required>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user) => (
-                          <SelectItem key={user} value={user}>
-                            {user}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <CardContent className="p-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">👤 Gebruiker</Label>
+                      <Select value={currentUser} onValueChange={setCurrentUser} required>
+                        <SelectTrigger className="h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((user) => (
+                            <SelectItem key={user} value={user}>
+                              {user}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>📦 Product</Label>
-                    <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product} value={product}>
-                            {product}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">📦 Product</Label>
+                      <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Selecteer een product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((product) => (
+                            <SelectItem key={product} value={product}>
+                              {product}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>📍 Locatie</Label>
-                    <Select value={location} onValueChange={setLocation} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een locatie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locations.map((loc) => (
-                          <SelectItem key={loc} value={loc}>
-                            {loc}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">📍 Locatie</Label>
+                      <Select value={location} onValueChange={setLocation} required>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Selecteer een locatie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.map((loc) => (
+                            <SelectItem key={loc} value={loc}>
+                              {loc}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>🎯 Doel</Label>
-                    <Select value={purpose} onValueChange={setPurpose} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een doel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {purposes.map((purposeItem) => (
-                          <SelectItem key={purposeItem} value={purposeItem}>
-                            {purposeItem}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label className="text-base font-medium">🎯 Doel</Label>
+                      <Select value={purpose} onValueChange={setPurpose} required>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Selecteer een doel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {purposes.map((purposeItem) => (
+                            <SelectItem key={purposeItem} value={purposeItem}>
+                              {purposeItem}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <Button
                     type="submit"
-                    className="w-full bg-amber-600 hover:bg-amber-700"
-                    size="lg"
+                    className="w-full bg-amber-600 hover:bg-amber-700 h-14 text-lg font-medium"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Bezig met registreren..." : "💾 Registreren"}
+                    {isLoading ? "Bezig met registreren..." : "💾 Product Registreren"}
                   </Button>
                 </form>
               </CardContent>
@@ -412,24 +463,24 @@ export default function ProductRegistrationApp() {
           </TabsContent>
 
           <TabsContent value="history">
-            <Card>
-              <CardHeader>
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>📋 Registratie Geschiedenis</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl">📋 Registratie Geschiedenis</CardTitle>
                     <CardDescription>
                       Overzicht van alle geregistreerde producten ({getFilteredAndSortedEntries().length} van{" "}
                       {entries.length} items)
                     </CardDescription>
                   </div>
                   {entries.length > 0 && (
-                    <Button onClick={exportToCSV} variant="outline">
+                    <Button onClick={exportToCSV} variant="outline" className="bg-white">
                       📥 Export CSV
                     </Button>
                   )}
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 {/* Zoek en Filter Sectie */}
                 <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg border">
                   <div className="flex items-center justify-between">
@@ -553,7 +604,7 @@ export default function ProductRegistrationApp() {
                     {getFilteredAndSortedEntries().map((entry) => (
                       <div
                         key={entry.id}
-                        className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                        className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors shadow-sm"
                       >
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -584,22 +635,23 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="users">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>👤➕ Nieuwe Gebruiker Toevoegen</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">👤➕ Nieuwe Gebruiker Toevoegen</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="flex gap-2">
                     <Input
                       placeholder="Voer gebruikersnaam in"
                       value={newUserName}
                       onChange={(e) => setNewUserName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewUser()}
+                      className="h-12"
                     />
                     <Button
                       onClick={addNewUser}
                       disabled={!newUserName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                     >
                       Toevoegen
                     </Button>
@@ -607,14 +659,14 @@ export default function ProductRegistrationApp() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Gebruikers Beheren ({users.length})</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-2">
                     {users.map((user) => (
-                      <div key={user} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={user} className="flex items-center justify-between p-3 border rounded-lg bg-white">
                         <span className="font-medium">👤 {user}</span>
                         <Button
                           size="sm"
@@ -634,22 +686,23 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="products">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>📦 Nieuw Product Toevoegen</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">📦 Nieuw Product Toevoegen</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="flex gap-2">
                     <Input
                       placeholder="Voer productnaam in"
                       value={newProductName}
                       onChange={(e) => setNewProductName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
+                      className="h-12"
                     />
                     <Button
                       onClick={addNewProduct}
                       disabled={!newProductName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                     >
                       Toevoegen
                     </Button>
@@ -657,14 +710,14 @@ export default function ProductRegistrationApp() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Producten Beheren ({products.length})</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-2">
                     {products.map((product) => (
-                      <div key={product} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={product} className="flex items-center justify-between p-3 border rounded-lg bg-white">
                         <span className="font-medium">📦 {product}</span>
                         <Button
                           size="sm"
@@ -684,22 +737,23 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="locations">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>📍 Nieuwe Locatie Toevoegen</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">📍 Nieuwe Locatie Toevoegen</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="flex gap-2">
                     <Input
                       placeholder="Voer locatienaam in"
                       value={newLocationName}
                       onChange={(e) => setNewLocationName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewLocation()}
+                      className="h-12"
                     />
                     <Button
                       onClick={addNewLocation}
                       disabled={!newLocationName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                     >
                       Toevoegen
                     </Button>
@@ -707,14 +761,14 @@ export default function ProductRegistrationApp() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Locaties Beheren ({locations.length})</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-2">
                     {locations.map((loc) => (
-                      <div key={loc} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={loc} className="flex items-center justify-between p-3 border rounded-lg bg-white">
                         <span className="font-medium">📍 {loc}</span>
                         <Button
                           size="sm"
@@ -734,22 +788,23 @@ export default function ProductRegistrationApp() {
 
           <TabsContent value="purposes">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>🎯 Nieuw Doel Toevoegen</CardTitle>
+              <Card className="shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-rose-50 to-pink-50 border-b">
+                  <CardTitle className="flex items-center gap-2 text-xl">🎯 Nieuw Doel Toevoegen</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="flex gap-2">
                     <Input
                       placeholder="Voer doel/toepassing in"
                       value={newPurposeName}
                       onChange={(e) => setNewPurposeName(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addNewPurpose()}
+                      className="h-12"
                     />
                     <Button
                       onClick={addNewPurpose}
                       disabled={!newPurposeName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                     >
                       Toevoegen
                     </Button>
@@ -757,14 +812,17 @@ export default function ProductRegistrationApp() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Doelen Beheren ({purposes.length})</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-2">
                     {purposes.map((purposeItem) => (
-                      <div key={purposeItem} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={purposeItem}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-white"
+                      >
                         <span className="font-medium">🎯 {purposeItem}</span>
                         <Button
                           size="sm"
@@ -785,9 +843,31 @@ export default function ProductRegistrationApp() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-12 border-t border-gray-200 bg-white py-6">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-sm text-gray-600">© {new Date().getFullYear()} Interflon. Alle rechten voorbehouden.</p>
+      <footer className="mt-12 border-t border-gray-200 bg-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center mb-4 md:mb-0">
+              <Image
+                src="/images/dematic-logo.png"
+                alt="DEMATIC Logo"
+                width={120}
+                height={48}
+                className="h-8 w-auto mr-4"
+              />
+              <p className="text-sm text-gray-600">© {new Date().getFullYear()} DEMATIC. Alle rechten voorbehouden.</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Privacy
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Voorwaarden
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Contact
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
