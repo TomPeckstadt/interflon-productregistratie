@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +23,6 @@ import {
   getPurposes,
   type RegistrationEntry,
 } from "@/lib/firebase-clean"
-
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
 const DEFAULT_PRODUCTS = ["Laptop Dell XPS", 'Monitor Samsung 24"', "Muis Logitech", "Toetsenbord Mechanical"]
