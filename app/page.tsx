@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,6 +50,14 @@ export default function ProductRegistrationApp() {
   const [newLocationName, setNewLocationName] = useState("")
   const [newPurposeName, setNewPurposeName] = useState("")
 
+  // Import states
+  const [importMessage, setImportMessage] = useState("")
+  const [importError, setImportError] = useState("")
+  const userFileInputRef = useRef<HTMLInputElement>(null)
+  const productFileInputRef = useRef<HTMLInputElement>(null)
+  const locationFileInputRef = useRef<HTMLInputElement>(null)
+  const purposeFileInputRef = useRef<HTMLInputElement>(null)
+
   // Filter en zoek states
   const [searchQuery, setSearchQuery] = useState("")
   const [filterUser, setFilterUser] = useState("all")
@@ -92,6 +100,132 @@ export default function ProductRegistrationApp() {
     if (savedPurposes) {
       setPurposes(JSON.parse(savedPurposes))
     }
+  }
+
+  // Excel import functie
+  const handleFileImport = async (file: File, type: "users" | "products" | "locations" | "purposes") => {
+    try {
+      setImportError("")
+      setImportMessage("Bestand wordt verwerkt...")
+
+      const text = await file.text()
+      let items: string[] = []
+
+      if (file.name.endsWith(".csv")) {
+        // CSV verwerking
+        const lines = text.split("\n").filter((line) => line.trim())
+        items = lines
+          .map((line) => {
+            // Verwijder quotes en komma's, neem eerste kolom
+            const cleaned = line.split(",")[0].replace(/"/g, "").trim()
+            return cleaned
+          })
+          .filter((item) => item && item.length > 0)
+      } else {
+        // Probeer als tekst bestand (elke regel is een item)
+        items = text
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line && line.length > 0)
+      }
+
+      if (items.length === 0) {
+        setImportError("Geen geldige items gevonden in het bestand")
+        return
+      }
+
+      // Update de juiste lijst
+      let currentList: string[] = []
+      let setList: (items: string[]) => void
+      let storageKey: string
+
+      switch (type) {
+        case "users":
+          currentList = users
+          setList = setUsers
+          storageKey = "customUsers"
+          break
+        case "products":
+          currentList = products
+          setList = setProducts
+          storageKey = "customProducts"
+          break
+        case "locations":
+          currentList = locations
+          setList = setLocations
+          storageKey = "customLocations"
+          break
+        case "purposes":
+          currentList = purposes
+          setList = setPurposes
+          storageKey = "customPurposes"
+          break
+      }
+
+      // Voeg nieuwe items toe (vermijd duplicaten)
+      const newItems = items.filter((item) => !currentList.includes(item))
+      const updatedList = [...currentList, ...newItems]
+
+      setList(updatedList)
+      localStorage.setItem(storageKey, JSON.stringify(updatedList))
+
+      setImportMessage(
+        `✅ ${newItems.length} nieuwe ${type} geïmporteerd! (${items.length - newItems.length} duplicaten overgeslagen)`,
+      )
+
+      // Reset file input
+      if (type === "users" && userFileInputRef.current) userFileInputRef.current.value = ""
+      if (type === "products" && productFileInputRef.current) productFileInputRef.current.value = ""
+      if (type === "locations" && locationFileInputRef.current) locationFileInputRef.current.value = ""
+      if (type === "purposes" && purposeFileInputRef.current) purposeFileInputRef.current.value = ""
+
+      setTimeout(() => setImportMessage(""), 5000)
+    } catch (error) {
+      setImportError(`Fout bij importeren: ${error instanceof Error ? error.message : "Onbekende fout"}`)
+      setTimeout(() => setImportError(""), 5000)
+    }
+  }
+
+  // Export template functie
+  const exportTemplate = (type: "users" | "products" | "locations" | "purposes") => {
+    let templateData: string[] = []
+    let filename = ""
+
+    switch (type) {
+      case "users":
+        templateData = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg", "Nieuwe Gebruiker"]
+        filename = "gebruikers-template.csv"
+        break
+      case "products":
+        templateData = [
+          "Laptop Dell XPS",
+          "Monitor Samsung 24",
+          "Muis Logitech",
+          "Toetsenbord Mechanical",
+          "Nieuw Product",
+        ]
+        filename = "producten-template.csv"
+        break
+      case "locations":
+        templateData = ["Kantoor 1.1", "Kantoor 1.2", "Vergaderzaal A", "Warehouse", "Thuis", "Nieuwe Locatie"]
+        filename = "locaties-template.csv"
+        break
+      case "purposes":
+        templateData = ["Presentatie", "Thuiswerken", "Reparatie", "Training", "Demonstratie", "Nieuw Doel"]
+        filename = "doelen-template.csv"
+        break
+    }
+
+    const csvContent = templateData.join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+    link.setAttribute("download", filename)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   // Registreer nieuw item
@@ -300,7 +434,7 @@ export default function ProductRegistrationApp() {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Logo en titel sectie */}
             <div className="flex flex-col lg:flex-row items-center gap-6">
-              {/* DEMATIC Logo - vervang de Image component met deze div */}
+              {/* DEMATIC Logo */}
               <div className="flex-shrink-0">
                 <div className="flex items-center bg-white p-4 rounded-lg shadow-sm border">
                   <div className="w-1 h-12 bg-amber-500 mr-4"></div>
@@ -334,6 +468,19 @@ export default function ProductRegistrationApp() {
         {showSuccess && (
           <Alert className="mb-6 border-green-200 bg-green-50">
             <AlertDescription className="text-green-800">✅ Product succesvol geregistreerd!</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Import berichten */}
+        {importMessage && (
+          <Alert className="mb-6 border-blue-200 bg-blue-50">
+            <AlertDescription className="text-blue-800">{importMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {importError && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertDescription className="text-red-800">{importError}</AlertDescription>
           </Alert>
         )}
 
@@ -632,31 +779,67 @@ export default function ProductRegistrationApp() {
             <div className="space-y-6">
               <Card className="shadow-sm">
                 <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
-                  <CardTitle className="flex items-center gap-2 text-xl">👤➕ Nieuwe Gebruiker Toevoegen</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-xl">👤➕ Gebruikers Beheren</CardTitle>
+                  <CardDescription>Voeg handmatig gebruikers toe of importeer vanuit een bestand</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer gebruikersnaam in"
-                      value={newUserName}
-                      onChange={(e) => setNewUserName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewUser()}
-                      className="h-12"
-                    />
-                    <Button
-                      onClick={addNewUser}
-                      disabled={!newUserName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
-                    >
-                      Toevoegen
-                    </Button>
+                <CardContent className="p-6 space-y-6">
+                  {/* Handmatig toevoegen */}
+                  <div>
+                    <Label className="text-base font-medium mb-2 block">Handmatig toevoegen</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Voer gebruikersnaam in"
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addNewUser()}
+                        className="h-12"
+                      />
+                      <Button
+                        onClick={addNewUser}
+                        disabled={!newUserName.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                      >
+                        Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Import sectie */}
+                  <div className="border-t pt-6">
+                    <Label className="text-base font-medium mb-4 block">📁 Import vanuit bestand</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-gray-600 mb-2 block">Selecteer CSV/TXT bestand</Label>
+                        <Input
+                          ref={userFileInputRef}
+                          type="file"
+                          accept=".csv,.txt"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleFileImport(file, "users")
+                          }}
+                          className="h-12"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Ondersteunde formaten: CSV, TXT (één gebruiker per regel)
+                        </p>
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <Button onClick={() => exportTemplate("users")} variant="outline" className="h-12">
+                          📥 Download Template
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Download een voorbeeldbestand om te zien hoe het formaat eruit moet zien
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="shadow-sm">
                 <CardHeader>
-                  <CardTitle>Gebruikers Beheren ({users.length})</CardTitle>
+                  <CardTitle>Gebruikers Lijst ({users.length})</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-2">
@@ -683,31 +866,67 @@ export default function ProductRegistrationApp() {
             <div className="space-y-6">
               <Card className="shadow-sm">
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
-                  <CardTitle className="flex items-center gap-2 text-xl">📦 Nieuw Product Toevoegen</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-xl">📦 Producten Beheren</CardTitle>
+                  <CardDescription>Voeg handmatig producten toe of importeer vanuit een bestand</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer productnaam in"
-                      value={newProductName}
-                      onChange={(e) => setNewProductName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
-                      className="h-12"
-                    />
-                    <Button
-                      onClick={addNewProduct}
-                      disabled={!newProductName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
-                    >
-                      Toevoegen
-                    </Button>
+                <CardContent className="p-6 space-y-6">
+                  {/* Handmatig toevoegen */}
+                  <div>
+                    <Label className="text-base font-medium mb-2 block">Handmatig toevoegen</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Voer productnaam in"
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
+                        className="h-12"
+                      />
+                      <Button
+                        onClick={addNewProduct}
+                        disabled={!newProductName.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                      >
+                        Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Import sectie */}
+                  <div className="border-t pt-6">
+                    <Label className="text-base font-medium mb-4 block">📁 Import vanuit bestand</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-gray-600 mb-2 block">Selecteer CSV/TXT bestand</Label>
+                        <Input
+                          ref={productFileInputRef}
+                          type="file"
+                          accept=".csv,.txt"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleFileImport(file, "products")
+                          }}
+                          className="h-12"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Ondersteunde formaten: CSV, TXT (één product per regel)
+                        </p>
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <Button onClick={() => exportTemplate("products")} variant="outline" className="h-12">
+                          📥 Download Template
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Download een voorbeeldbestand om te zien hoe het formaat eruit moet zien
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="shadow-sm">
                 <CardHeader>
-                  <CardTitle>Producten Beheren ({products.length})</CardTitle>
+                  <CardTitle>Producten Lijst ({products.length})</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-2">
@@ -734,31 +953,67 @@ export default function ProductRegistrationApp() {
             <div className="space-y-6">
               <Card className="shadow-sm">
                 <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b">
-                  <CardTitle className="flex items-center gap-2 text-xl">📍 Nieuwe Locatie Toevoegen</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-xl">📍 Locaties Beheren</CardTitle>
+                  <CardDescription>Voeg handmatig locaties toe of importeer vanuit een bestand</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer locatienaam in"
-                      value={newLocationName}
-                      onChange={(e) => setNewLocationName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewLocation()}
-                      className="h-12"
-                    />
-                    <Button
-                      onClick={addNewLocation}
-                      disabled={!newLocationName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
-                    >
-                      Toevoegen
-                    </Button>
+                <CardContent className="p-6 space-y-6">
+                  {/* Handmatig toevoegen */}
+                  <div>
+                    <Label className="text-base font-medium mb-2 block">Handmatig toevoegen</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Voer locatienaam in"
+                        value={newLocationName}
+                        onChange={(e) => setNewLocationName(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addNewLocation()}
+                        className="h-12"
+                      />
+                      <Button
+                        onClick={addNewLocation}
+                        disabled={!newLocationName.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                      >
+                        Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Import sectie */}
+                  <div className="border-t pt-6">
+                    <Label className="text-base font-medium mb-4 block">📁 Import vanuit bestand</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-gray-600 mb-2 block">Selecteer CSV/TXT bestand</Label>
+                        <Input
+                          ref={locationFileInputRef}
+                          type="file"
+                          accept=".csv,.txt"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleFileImport(file, "locations")
+                          }}
+                          className="h-12"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Ondersteunde formaten: CSV, TXT (één locatie per regel)
+                        </p>
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <Button onClick={() => exportTemplate("locations")} variant="outline" className="h-12">
+                          📥 Download Template
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Download een voorbeeldbestand om te zien hoe het formaat eruit moet zien
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="shadow-sm">
                 <CardHeader>
-                  <CardTitle>Locaties Beheren ({locations.length})</CardTitle>
+                  <CardTitle>Locaties Lijst ({locations.length})</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-2">
@@ -785,31 +1040,67 @@ export default function ProductRegistrationApp() {
             <div className="space-y-6">
               <Card className="shadow-sm">
                 <CardHeader className="bg-gradient-to-r from-rose-50 to-pink-50 border-b">
-                  <CardTitle className="flex items-center gap-2 text-xl">🎯 Nieuw Doel Toevoegen</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-xl">🎯 Doelen Beheren</CardTitle>
+                  <CardDescription>Voeg handmatig doelen toe of importeer vanuit een bestand</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer doel/toepassing in"
-                      value={newPurposeName}
-                      onChange={(e) => setNewPurposeName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewPurpose()}
-                      className="h-12"
-                    />
-                    <Button
-                      onClick={addNewPurpose}
-                      disabled={!newPurposeName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
-                    >
-                      Toevoegen
-                    </Button>
+                <CardContent className="p-6 space-y-6">
+                  {/* Handmatig toevoegen */}
+                  <div>
+                    <Label className="text-base font-medium mb-2 block">Handmatig toevoegen</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Voer doel/toepassing in"
+                        value={newPurposeName}
+                        onChange={(e) => setNewPurposeName(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && addNewPurpose()}
+                        className="h-12"
+                      />
+                      <Button
+                        onClick={addNewPurpose}
+                        disabled={!newPurposeName.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                      >
+                        Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Import sectie */}
+                  <div className="border-t pt-6">
+                    <Label className="text-base font-medium mb-4 block">📁 Import vanuit bestand</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-gray-600 mb-2 block">Selecteer CSV/TXT bestand</Label>
+                        <Input
+                          ref={purposeFileInputRef}
+                          type="file"
+                          accept=".csv,.txt"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleFileImport(file, "purposes")
+                          }}
+                          className="h-12"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Ondersteunde formaten: CSV, TXT (één doel per regel)
+                        </p>
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <Button onClick={() => exportTemplate("purposes")} variant="outline" className="h-12">
+                          📥 Download Template
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Download een voorbeeldbestand om te zien hoe het formaat eruit moet zien
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="shadow-sm">
                 <CardHeader>
-                  <CardTitle>Doelen Beheren ({purposes.length})</CardTitle>
+                  <CardTitle>Doelen Lijst ({purposes.length})</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-2">
@@ -841,7 +1132,7 @@ export default function ProductRegistrationApp() {
       <footer className="mt-12 border-t border-gray-200 bg-white py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            {/* Footer logo - vervang de Image component */}
+            {/* Footer logo */}
             <div className="flex items-center mb-4 md:mb-0">
               <div className="flex items-center mr-4">
                 <div className="w-1 h-6 bg-amber-500 mr-2"></div>
