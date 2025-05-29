@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Package, MapPin, Save, History, CheckCircle, Download, UserPlus, Trash2, Target } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   saveRegistration,
@@ -23,6 +22,7 @@ import {
   getPurposes,
   type RegistrationEntry,
 } from "@/lib/firebase-clean"
+
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
 const DEFAULT_PRODUCTS = ["Laptop Dell XPS", 'Monitor Samsung 24"', "Muis Logitech", "Toetsenbord Mechanical"]
@@ -473,4 +473,82 @@ export default function ProductRegistrationApp() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-     
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-amber-500 rounded-lg flex items-center justify-center">
+                <div className="h-10 w-10 text-white">📦</div>
+              </div>
+              <div className="border-l border-gray-300 pl-4">
+                <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
+                <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
+              <span>Powered by Interflon</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-4">
+        {showSuccess && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <div className="h-4 w-4 text-green-600">✓</div>
+            <AlertDescription className="text-green-800">Product succesvol geregistreerd!</AlertDescription>
+          </Alert>
+        )}
+
+        <Tabs defaultValue="register" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200">
+            <TabsTrigger value="register">Registreren</TabsTrigger>
+            <TabsTrigger value="history">Geschiedenis</TabsTrigger>
+            <TabsTrigger value="users">Gebruikers</TabsTrigger>
+            <TabsTrigger value="products">Producten</TabsTrigger>
+            <TabsTrigger value="locations">Locaties</TabsTrigger>
+            <TabsTrigger value="purposes">Doelen</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="register">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span>📦</span>
+                  Nieuw Product Registreren
+                </CardTitle>
+                <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Gebruiker */}
+                  <div className="space-y-2">
+                    <Label htmlFor="user" className="flex items-center gap-2">
+                      <span>👤</span>
+                      Gebruiker
+                    </Label>
+                    <Select value={currentUser} onValueChange={setCurrentUser} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecteer je naam" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user} value={user}>
+                            {user}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Product */}
+                  <div className="space-y-2">
+                    <Label htmlFor="product" className="flex items-center gap-2">
+                      <span>📦</span>
+                      Product
+                    </Label>
+                    <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecteer een product" />
+                      </SelectTrigger>
+               
