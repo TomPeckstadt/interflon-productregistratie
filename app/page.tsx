@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// Interface
 interface RegistrationEntry {
   id: string
   user: string
@@ -20,11 +19,8 @@ interface RegistrationEntry {
   timestamp: string
   date: string
   time: string
-  photo_url?: string
-  qr_code?: string
 }
 
-// Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
 const DEFAULT_PRODUCTS = ["Laptop Dell XPS", "Monitor Samsung 24", "Muis Logitech", "Toetsenbord Mechanical"]
 const DEFAULT_LOCATIONS = ["Kantoor 1.1", "Kantoor 1.2", "Vergaderzaal A", "Warehouse", "Thuis"]
@@ -37,80 +33,50 @@ export default function ProductRegistrationApp() {
   const [purpose, setPurpose] = useState(DEFAULT_PURPOSES[0])
   const [entries, setEntries] = useState<RegistrationEntry[]>([])
   const [showSuccess, setShowSuccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
-  // Beheer states
   const [users, setUsers] = useState<string[]>(DEFAULT_USERS)
   const [products, setProducts] = useState<string[]>(DEFAULT_PRODUCTS)
   const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS)
   const [purposes, setPurposes] = useState<string[]>(DEFAULT_PURPOSES)
 
-  // Nieuwe item states
   const [newUserName, setNewUserName] = useState("")
   const [newProductName, setNewProductName] = useState("")
   const [newLocationName, setNewLocationName] = useState("")
   const [newPurposeName, setNewPurposeName] = useState("")
 
-  // Filter en zoek states
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterUser, setFilterUser] = useState("all")
-  const [filterProduct, setFilterProduct] = useState("")
-  const [filterLocation, setFilterLocation] = useState("all")
-  const [filterDateFrom, setFilterDateFrom] = useState("")
-  const [filterDateTo, setFilterDateTo] = useState("")
-  const [sortBy, setSortBy] = useState<"date" | "user" | "product">("date")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-
-  // Laad opgeslagen gegevens
   useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = () => {
-    setIsLoading(true)
-
-    // Laad registraties
     const savedEntries = localStorage.getItem("productRegistrations")
     if (savedEntries) {
       setEntries(JSON.parse(savedEntries))
     }
 
-    // Laad gebruikers
     const savedUsers = localStorage.getItem("customUsers")
     if (savedUsers) {
       setUsers(JSON.parse(savedUsers))
     }
 
-    // Laad producten
     const savedProducts = localStorage.getItem("customProducts")
     if (savedProducts) {
       setProducts(JSON.parse(savedProducts))
     }
 
-    // Laad locaties
     const savedLocations = localStorage.getItem("customLocations")
     if (savedLocations) {
       setLocations(JSON.parse(savedLocations))
     }
 
-    // Laad doelen
     const savedPurposes = localStorage.getItem("customPurposes")
     if (savedPurposes) {
       setPurposes(JSON.parse(savedPurposes))
     }
+  }, [])
 
-    setIsLoading(false)
-  }
-
-  // Registreer nieuw item
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!currentUser || !selectedProduct || !location || !purpose) {
       return
     }
-
-    setIsLoading(true)
 
     const now = new Date()
     const newEntry: RegistrationEntry = {
@@ -122,58 +88,20 @@ export default function ProductRegistrationApp() {
       timestamp: now.toISOString(),
       date: now.toLocaleDateString("nl-NL"),
       time: now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }),
-      photo_url: "",
-      qr_code: "",
     }
 
     const updatedEntries = [newEntry, ...entries]
     setEntries(updatedEntries)
     localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
 
-    // Reset form
     setSelectedProduct("")
     setLocation("")
     setPurpose("")
 
-    // Toon success bericht
     setShowSuccess(true)
     setTimeout(() => setShowSuccess(false), 3000)
-    setIsLoading(false)
   }
 
-  // Export naar CSV
-  const exportToCSV = () => {
-    const filteredEntries = getFilteredAndSortedEntries()
-    const headers = ["Datum", "Tijd", "Gebruiker", "Product", "Locatie", "Doel"]
-    const csvContent = [
-      headers.join(","),
-      ...filteredEntries.map((entry) =>
-        [
-          entry.date,
-          entry.time,
-          `"${entry.user}"`,
-          `"${entry.product}"`,
-          `"${entry.location}"`,
-          `"${entry.purpose}"`,
-        ].join(","),
-      ),
-    ].join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-
-    const filterSuffix = searchQuery || filterUser || filterProduct || filterLocation ? "-gefilterd" : ""
-    link.setAttribute("download", `product-registraties${filterSuffix}-${new Date().toISOString().split("T")[0]}.csv`)
-
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // Voeg nieuwe gebruiker toe
   const addNewUser = () => {
     if (newUserName.trim() && !users.includes(newUserName.trim())) {
       const updatedUsers = [...users, newUserName.trim()]
@@ -183,7 +111,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuw product toe
   const addNewProduct = () => {
     if (newProductName.trim() && !products.includes(newProductName.trim())) {
       const updatedProducts = [...products, newProductName.trim()]
@@ -193,7 +120,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuwe locatie toe
   const addNewLocation = () => {
     if (newLocationName.trim() && !locations.includes(newLocationName.trim())) {
       const updatedLocations = [...locations, newLocationName.trim()]
@@ -203,7 +129,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuw doel toe
   const addNewPurpose = () => {
     if (newPurposeName.trim() && !purposes.includes(newPurposeName.trim())) {
       const updatedPurposes = [...purposes, newPurposeName.trim()]
@@ -213,7 +138,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Verwijder item
   const removeUser = (userToRemove: string) => {
     const updatedUsers = users.filter((user) => user !== userToRemove)
     setUsers(updatedUsers)
@@ -238,97 +162,17 @@ export default function ProductRegistrationApp() {
     localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
   }
 
-  // Filter en zoek functies
-  const getFilteredAndSortedEntries = () => {
-    const filtered = entries.filter((entry) => {
-      const searchMatch =
-        !searchQuery ||
-        entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const userMatch = !filterUser || filterUser === "all" || entry.user === filterUser
-      const productMatch = !filterProduct || entry.product.toLowerCase().includes(filterProduct.toLowerCase())
-      const locationMatch = !filterLocation || filterLocation === "all" || entry.location === filterLocation
-
-      let dateMatch = true
-      if (filterDateFrom || filterDateTo) {
-        const entryDate = new Date(entry.timestamp)
-        if (filterDateFrom) {
-          const fromDate = new Date(filterDateFrom)
-          dateMatch = dateMatch && entryDate >= fromDate
-        }
-        if (filterDateTo) {
-          const toDate = new Date(filterDateTo + "T23:59:59")
-          dateMatch = dateMatch && entryDate <= toDate
-        }
-      }
-
-      return searchMatch && userMatch && productMatch && locationMatch && dateMatch
-    })
-
-    filtered.sort((a, b) => {
-      let comparison = 0
-
-      switch (sortBy) {
-        case "date":
-          comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-          break
-        case "user":
-          comparison = a.user.localeCompare(b.user)
-          break
-        case "product":
-          comparison = a.product.localeCompare(b.product)
-          break
-      }
-
-      return sortOrder === "asc" ? comparison : -comparison
-    })
-
-    return filtered
-  }
-
-  // Wis alle filters
-  const clearAllFilters = () => {
-    setSearchQuery("")
-    setFilterUser("all")
-    setFilterProduct("")
-    setFilterLocation("all")
-    setFilterDateFrom("")
-    setFilterDateTo("")
-    setSortBy("date")
-    setSortOrder("desc")
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Laden...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-amber-500 rounded-lg flex items-center justify-center">
-                <span className="text-3xl text-white">📦</span>
-              </div>
-              <div className="border-l border-gray-300 pl-4">
-                <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
-                <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-amber-500 rounded-lg flex items-center justify-center">
+              <span className="text-2xl text-white">📦</span>
             </div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <span>Powered by Interflon</span>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
+              <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
             </div>
           </div>
         </div>
@@ -356,23 +200,16 @@ export default function ProductRegistrationApp() {
           <TabsContent value="register">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span>📦</span>
-                  Nieuw Product Registreren
-                </CardTitle>
+                <CardTitle>📦 Nieuw Product Registreren</CardTitle>
                 <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Gebruiker */}
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="user" className="flex items-center gap-2">
-                      <span>👤</span>
-                      Gebruiker
-                    </Label>
+                    <Label>👤 Gebruiker</Label>
                     <Select value={currentUser} onValueChange={setCurrentUser} required>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecteer je naam" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {users.map((user) => (
@@ -384,15 +221,11 @@ export default function ProductRegistrationApp() {
                     </Select>
                   </div>
 
-                  {/* Product */}
                   <div className="space-y-2">
-                    <Label htmlFor="product" className="flex items-center gap-2">
-                      <span>📦</span>
-                      Product
-                    </Label>
+                    <Label>📦 Product</Label>
                     <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een product" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {products.map((product) => (
@@ -404,15 +237,11 @@ export default function ProductRegistrationApp() {
                     </Select>
                   </div>
 
-                  {/* Locatie */}
                   <div className="space-y-2">
-                    <Label htmlFor="location" className="flex items-center gap-2">
-                      <span>📍</span>
-                      Locatie
-                    </Label>
+                    <Label>📍 Locatie</Label>
                     <Select value={location} onValueChange={setLocation} required>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een locatie" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {locations.map((loc) => (
@@ -424,15 +253,11 @@ export default function ProductRegistrationApp() {
                     </Select>
                   </div>
 
-                  {/* Doel */}
                   <div className="space-y-2">
-                    <Label htmlFor="purpose" className="flex items-center gap-2">
-                      <span>🎯</span>
-                      Doel/Toepassing
-                    </Label>
+                    <Label>🎯 Doel</Label>
                     <Select value={purpose} onValueChange={setPurpose} required>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecteer een doel" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {purposes.map((purposeItem) => (
@@ -444,14 +269,8 @@ export default function ProductRegistrationApp() {
                     </Select>
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full bg-amber-600 hover:bg-amber-700"
-                    size="lg"
-                    disabled={isLoading}
-                  >
-                    <span className="mr-2">💾</span>
-                    {isLoading ? "Registreren..." : "Registreren"}
+                  <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700" size="lg">
+                    💾 Registreren
                   </Button>
                 </form>
               </CardContent>
@@ -461,54 +280,129 @@ export default function ProductRegistrationApp() {
           <TabsContent value="history">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <span>📋</span>
-                      Registratie Geschiedenis
-                    </CardTitle>
-                    <CardDescription>
-                      Overzicht van alle geregistreerde producten ({getFilteredAndSortedEntries().length} van{" "}
-                      {entries.length} items)
-                    </CardDescription>
-                  </div>
-                  {entries.length > 0 && (
-                    <Button onClick={exportToCSV} variant="outline">
-                      <span className="mr-2">⬇️</span>
-                      Export CSV
-                    </Button>
-                  )}
-                </div>
+                <CardTitle>📋 Registratie Geschiedenis</CardTitle>
+                <CardDescription>Overzicht van alle geregistreerde producten ({entries.length} items)</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Zoek en Filter Sectie */}
-                <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg border">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Zoeken & Filteren</h3>
-                    <Button onClick={clearAllFilters} variant="outline" size="sm">
-                      Wis filters
+                {entries.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Nog geen registraties. Begin met het registreren van een product!
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {entries.slice(0, 20).map((entry) => (
+                      <div key={entry.id} className="border rounded-lg p-3 bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            {entry.user}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {entry.date} om {entry.time}
+                          </span>
+                        </div>
+                        <h4 className="font-semibold">{entry.product}</h4>
+                        <div className="text-sm text-gray-600 mt-1">
+                          📍 {entry.location} • 🎯 {entry.purpose}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>👤➕ Nieuwe Gebruiker Toevoegen</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Voer gebruikersnaam in"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addNewUser()}
+                    />
+                    <Button onClick={addNewUser} disabled={!newUserName.trim()} className="bg-amber-600 hover:bg-amber-700">
+                      Toevoegen
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gebruikers Beheren ({users.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-2">
-                    <Label htmlFor="search">Zoeken</Label>
-                    <Input
-                      id="search"
-                      placeholder="Zoek in alle velden..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full"
-                    />
+                    {users.map((user) => (
+                      <div key={user} className="flex items-center justify-between p-3 border rounded-lg">
+                        <span className="font-medium">{user}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeUser(user)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          🗑️
+                        </Button>
+                      </div>
+                    ))}
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label>Gebruiker</Label>
-                      <Select value={filterUser} onValueChange={setFilterUser}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Alle gebruikers" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Alle gebruikers</SelectItem>
-                          {users.map((user) => (
-                            <SelectItem key={
+          <TabsContent value="products">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>📦 Nieuw Product Toevoegen</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Voer productnaam in"
+                      value={newProductName}
+                      onChange={(e) => setNewProductName(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
+                    />
+                    <Button onClick={addNewProduct} disabled={!newProductName.trim()} className="bg-amber-600 hover:bg-amber-700">
+                      Toevoegen
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Producten Beheren ({products.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {products.map((product) => (
+                      <div key={product} className="flex items-center justify-between p-3 border rounded-lg">
+                        <span className="font-medium">{product}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeProduct(product)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          🗑️
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="locations">
+            <div className="space-y-6">
