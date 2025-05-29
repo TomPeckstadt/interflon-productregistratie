@@ -422,14 +422,14 @@ export default function ProductRegistrationApp() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img src="/dematic-logo.png" alt="Dematic Logo" className="h-20 w-auto" />
+              <img src="/dematic-logo.png" alt="Interflon Logo" className="h-20 w-auto" />
               <div className="border-l border-gray-300 pl-4">
                 <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
                 <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
               </div>
             </div>
             <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <span>Powered by Dematic</span>
+              <span>Powered by Interflon</span>
             </div>
           </div>
         </div>
@@ -1067,8 +1067,10 @@ export default function ProductRegistrationApp() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <img src="/dematic-logo.png" alt="Dematic Logo" className="h-8 w-auto mr-3" />
-              <p className="text-sm text-gray-600">© {new Date().getFullYear()} Dematic. Alle rechten voorbehouden.</p>
+              <img src="/dematic-logo.png" alt="Interflon Logo" className="h-8 w-auto mr-3" />
+              <p className="text-sm text-gray-600">
+                © {new Date().getFullYear()} Interflon. Alle rechten voorbehouden.
+              </p>
             </div>
             <div className="flex items-center gap-6">
               <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
