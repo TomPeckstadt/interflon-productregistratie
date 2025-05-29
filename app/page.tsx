@@ -65,6 +65,7 @@ export default function ProductRegistrationApp() {
   // QR Scanner states
   const [showQrScanner, setShowQrScanner] = useState(false)
   const [qrScanResult, setQrScanResult] = useState("")
+  const [qrScanMode, setQrScanMode] = useState<"registration" | "product-management">("registration")
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -197,16 +198,23 @@ export default function ProductRegistrationApp() {
   const handleQrCodeDetected = (qrCode: string) => {
     setQrScanResult(qrCode)
 
-    // Zoek product op basis van QR code
-    const foundProduct = products.find((p) => p.qrCode === qrCode)
+    if (qrScanMode === "registration") {
+      // Zoek product op basis van QR code voor registratie
+      const foundProduct = products.find((p) => p.qrCode === qrCode)
 
-    if (foundProduct) {
-      setSelectedProduct(foundProduct.name)
-      setImportMessage(`✅ Product gevonden: ${foundProduct.name}`)
+      if (foundProduct) {
+        setSelectedProduct(foundProduct.name)
+        setImportMessage(`✅ Product gevonden: ${foundProduct.name}`)
+        setTimeout(() => setImportMessage(""), 3000)
+      } else {
+        setImportError(`❌ Geen product gevonden voor QR code: ${qrCode}`)
+        setTimeout(() => setImportError(""), 3000)
+      }
+    } else if (qrScanMode === "product-management") {
+      // Vul QR code in voor product beheer
+      setNewProductQrCode(qrCode)
+      setImportMessage(`✅ QR code gescand: ${qrCode}`)
       setTimeout(() => setImportMessage(""), 3000)
-    } else {
-      setImportError(`❌ Geen product gevonden voor QR code: ${qrCode}`)
-      setTimeout(() => setImportError(""), 3000)
     }
 
     stopQrScanner()
@@ -438,14 +446,13 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuw product toe (aangepast voor QR codes)
+  // Voeg nieuw product toe (aangepast voor optionele QR codes)
   const addNewProduct = () => {
-    if (newProductName.trim() && newProductQrCode.trim()) {
-      const existingProduct = products.find(
-        (p) => p.name === newProductName.trim() || p.qrCode === newProductQrCode.trim(),
-      )
+    if (newProductName.trim()) {
+      const qrCode = newProductQrCode.trim() || "" // QR code is optioneel
+      const existingProduct = products.find((p) => p.name === newProductName.trim() || (qrCode && p.qrCode === qrCode))
       if (!existingProduct) {
-        const updatedProducts = [...products, { name: newProductName.trim(), qrCode: newProductQrCode.trim() }]
+        const updatedProducts = [...products, { name: newProductName.trim(), qrCode }]
         setProducts(updatedProducts)
         localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
         setNewProductName("")
@@ -697,7 +704,10 @@ export default function ProductRegistrationApp() {
                         </Select>
                         <Button
                           type="button"
-                          onClick={startQrScanner}
+                          onClick={() => {
+                            setQrScanMode("registration")
+                            startQrScanner()
+                          }}
                           className="h-12 px-4 bg-blue-600 hover:bg-blue-700"
                           disabled={showQrScanner}
                         >
@@ -1055,23 +1065,38 @@ export default function ProductRegistrationApp() {
                   {/* Handmatig toevoegen */}
                   <div>
                     <Label className="text-base font-medium mb-2 block">Handmatig toevoegen</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    <div className="grid grid-cols-1 gap-2 mb-2">
                       <Input
                         placeholder="Voer productnaam in"
                         value={newProductName}
                         onChange={(e) => setNewProductName(e.target.value)}
                         className="h-12"
                       />
-                      <Input
-                        placeholder="Voer QR code in"
-                        value={newProductQrCode}
-                        onChange={(e) => setNewProductQrCode(e.target.value)}
-                        className="h-12"
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Voer QR/EAN code in (optioneel)"
+                          value={newProductQrCode}
+                          onChange={(e) => setNewProductQrCode(e.target.value)}
+                          className="h-12 flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            // Start QR scanner voor product beheer
+                            startQrScanner()
+                            // Set een flag dat we in product management mode zijn
+                            setQrScanMode("product-management")
+                          }}
+                          className="h-12 px-4 bg-blue-600 hover:bg-blue-700"
+                          disabled={showQrScanner}
+                        >
+                          📱 Scan
+                        </Button>
+                      </div>
                     </div>
                     <Button
                       onClick={addNewProduct}
-                      disabled={!newProductName.trim() || !newProductQrCode.trim()}
+                      disabled={!newProductName.trim()}
                       className="bg-amber-600 hover:bg-amber-700 h-12 px-6 w-full md:w-auto"
                     >
                       Toevoegen
@@ -1124,7 +1149,9 @@ export default function ProductRegistrationApp() {
                       >
                         <div>
                           <span className="font-medium">📦 {product.name}</span>
-                          <div className="text-sm text-gray-500">QR: {product.qrCode}</div>
+                          <div className="text-sm text-gray-500">
+                            {product.qrCode ? `QR: ${product.qrCode}` : "Geen QR code"}
+                          </div>
                         </div>
                         <Button
                           size="sm"
