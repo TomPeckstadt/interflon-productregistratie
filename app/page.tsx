@@ -775,8 +775,8 @@ export default function ProductRegistrationApp() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6">
             {/* Logo en titel sectie */}
             <div className="flex flex-col lg:flex-row items-center gap-6">
               {/* DEMATIC Logo */}
@@ -823,7 +823,7 @@ export default function ProductRegistrationApp() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {showSuccess && (
           <Alert className="mb-6 border-green-200 bg-green-50">
             <AlertDescription className="text-green-800">✅ Product succesvol geregistreerd!</AlertDescription>
@@ -844,7 +844,7 @@ export default function ProductRegistrationApp() {
         )}
 
         <Tabs defaultValue="register" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white border border-gray-200 shadow-sm">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 bg-white border border-gray-200 shadow-sm">
             <TabsTrigger
               value="register"
               className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700"
@@ -875,6 +875,12 @@ export default function ProductRegistrationApp() {
             >
               Doelen ({purposes.length})
             </TabsTrigger>
+            <TabsTrigger
+              value="statistics"
+              className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700"
+            >
+              Statistieken
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="register">
@@ -885,11 +891,11 @@ export default function ProductRegistrationApp() {
               </CardHeader>
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-4 sm:gap-6">
                     <div className="space-y-2">
-                      <Label className="text-base font-medium">👤 Gebruiker</Label>
+                      <Label className="text-sm sm:text-base font-medium">👤 Gebruiker</Label>
                       <Select value={currentUser} onValueChange={setCurrentUser} required>
-                        <SelectTrigger className="h-12">
+                        <SelectTrigger className="h-10 sm:h-12">
                           <SelectValue placeholder="Selecteer gebruiker" />
                         </SelectTrigger>
                         <SelectContent>
@@ -903,10 +909,10 @@ export default function ProductRegistrationApp() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-base font-medium">📦 Product</Label>
+                      <Label className="text-sm sm:text-base font-medium">📦 Product</Label>
                       <div className="flex gap-2">
                         <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
-                          <SelectTrigger className="h-12 flex-1">
+                          <SelectTrigger className="h-10 sm:h-12 flex-1">
                             <SelectValue placeholder="Selecteer een product" />
                           </SelectTrigger>
                           <SelectContent>
@@ -923,7 +929,7 @@ export default function ProductRegistrationApp() {
                             setQrScanMode("registration")
                             startQrScanner()
                           }}
-                          className="h-12 px-4 bg-blue-600 hover:bg-blue-700"
+                          className="h-10 sm:h-12 px-4 bg-blue-600 hover:bg-blue-700"
                           disabled={showQrScanner}
                         >
                           📱 Scan QR
@@ -933,9 +939,9 @@ export default function ProductRegistrationApp() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-base font-medium">📍 Locatie</Label>
+                      <Label className="text-sm sm:text-base font-medium">📍 Locatie</Label>
                       <Select value={location} onValueChange={setLocation} required>
-                        <SelectTrigger className="h-12">
+                        <SelectTrigger className="h-10 sm:h-12">
                           <SelectValue placeholder="Selecteer een locatie" />
                         </SelectTrigger>
                         <SelectContent>
@@ -949,9 +955,9 @@ export default function ProductRegistrationApp() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-base font-medium">🎯 Doel</Label>
+                      <Label className="text-sm sm:text-base font-medium">🎯 Doel</Label>
                       <Select value={purpose} onValueChange={setPurpose} required>
-                        <SelectTrigger className="h-12">
+                        <SelectTrigger className="h-10 sm:h-12">
                           <SelectValue placeholder="Selecteer een doel" />
                         </SelectTrigger>
                         <SelectContent>
@@ -993,7 +999,7 @@ export default function ProductRegistrationApp() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-amber-600 hover:bg-amber-700 h-14 text-lg font-medium"
+                    className="w-full bg-amber-600 hover:bg-amber-700 h-12 sm:h-14 text-base sm:text-lg font-medium"
                     disabled={isLoading || connectionStatus !== "connected"}
                   >
                     {isLoading ? "Bezig met registreren..." : "💾 Product Registreren"}
@@ -1039,7 +1045,7 @@ export default function ProductRegistrationApp() {
                       placeholder="Zoek in alle velden (inclusief QR codes)..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full"
+                      className="w-full h-10 sm:h-12"
                     />
                   </div>
 
@@ -1047,7 +1053,7 @@ export default function ProductRegistrationApp() {
                     <div className="space-y-2">
                       <Label>👤 Gebruiker</Label>
                       <Select value={filterUser} onValueChange={setFilterUser}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10 sm:h-12">
                           <SelectValue placeholder="Alle gebruikers" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1067,13 +1073,14 @@ export default function ProductRegistrationApp() {
                         placeholder="Zoek product..."
                         value={filterProduct}
                         onChange={(e) => setFilterProduct(e.target.value)}
+                        className="h-10 sm:h-12"
                       />
                     </div>
 
                     <div className="space-y-2">
                       <Label>📍 Locatie</Label>
                       <Select value={filterLocation} onValueChange={setFilterLocation}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10 sm:h-12">
                           <SelectValue placeholder="Alle locaties" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1091,7 +1098,7 @@ export default function ProductRegistrationApp() {
                       <Label>📊 Sorteren</Label>
                       <div className="flex gap-2">
                         <Select value={sortBy} onValueChange={(value: "date" | "user" | "product") => setSortBy(value)}>
-                          <SelectTrigger className="flex-1">
+                          <SelectTrigger className="flex-1 h-10 sm:h-12">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1120,6 +1127,7 @@ export default function ProductRegistrationApp() {
                         type="date"
                         value={filterDateFrom}
                         onChange={(e) => setFilterDateFrom(e.target.value)}
+                        className="h-10 sm:h-12"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1129,6 +1137,7 @@ export default function ProductRegistrationApp() {
                         type="date"
                         value={filterDateTo}
                         onChange={(e) => setFilterDateTo(e.target.value)}
+                        className="h-10 sm:h-12"
                       />
                     </div>
                   </div>
@@ -1198,12 +1207,12 @@ export default function ProductRegistrationApp() {
                         value={newUserName}
                         onChange={(e) => setNewUserName(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && addNewUser()}
-                        className="h-12"
+                        className="h-10 sm:h-12"
                       />
                       <Button
                         onClick={addNewUser}
                         disabled={!newUserName.trim() || connectionStatus !== "connected"}
-                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                        className="bg-amber-600 hover:bg-amber-700 h-10 sm:h-12 px-6"
                       >
                         Toevoegen
                       </Button>
@@ -1224,7 +1233,7 @@ export default function ProductRegistrationApp() {
                             const file = e.target.files?.[0]
                             if (file) handleFileImport(file, "users")
                           }}
-                          className="h-12"
+                          className="h-10 sm:h-12"
                           disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -1232,7 +1241,7 @@ export default function ProductRegistrationApp() {
                         </p>
                       </div>
                       <div className="flex flex-col justify-end">
-                        <Button onClick={() => exportTemplate("users")} variant="outline" className="h-12">
+                        <Button onClick={() => exportTemplate("users")} variant="outline" className="h-10 sm:h-12">
                           📥 Download Template
                         </Button>
                         <p className="text-xs text-gray-500 mt-1">
@@ -1288,14 +1297,14 @@ export default function ProductRegistrationApp() {
                         placeholder="Voer productnaam in"
                         value={newProductName}
                         onChange={(e) => setNewProductName(e.target.value)}
-                        className="h-12"
+                        className="h-10 sm:h-12"
                       />
                       <div className="flex gap-2">
                         <Input
                           placeholder="Voer QR/EAN code in (optioneel)"
                           value={newProductQrCode}
                           onChange={(e) => setNewProductQrCode(e.target.value)}
-                          className="h-12 flex-1"
+                          className="h-10 sm:h-12 flex-1"
                         />
                         <Button
                           type="button"
@@ -1303,7 +1312,7 @@ export default function ProductRegistrationApp() {
                             startQrScanner()
                             setQrScanMode("product-management")
                           }}
-                          className="h-12 px-4 bg-blue-600 hover:bg-blue-700"
+                          className="h-10 sm:h-12 px-4 bg-blue-600 hover:bg-blue-700"
                           disabled={showQrScanner}
                         >
                           📱 Scan
@@ -1313,7 +1322,7 @@ export default function ProductRegistrationApp() {
                     <Button
                       onClick={addNewProduct}
                       disabled={!newProductName.trim() || connectionStatus !== "connected"}
-                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6 w-full md:w-auto"
+                      className="bg-amber-600 hover:bg-amber-700 h-10 sm:h-12 px-6 w-full md:w-auto"
                     >
                       Toevoegen
                     </Button>
@@ -1333,7 +1342,7 @@ export default function ProductRegistrationApp() {
                             const file = e.target.files?.[0]
                             if (file) handleFileImport(file, "products")
                           }}
-                          className="h-12"
+                          className="h-10 sm:h-12"
                           disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -1341,7 +1350,7 @@ export default function ProductRegistrationApp() {
                         </p>
                       </div>
                       <div className="flex flex-col justify-end">
-                        <Button onClick={() => exportTemplate("products")} variant="outline" className="h-12">
+                        <Button onClick={() => exportTemplate("products")} variant="outline" className="h-10 sm:h-12">
                           📥 Download Template
                         </Button>
                         <p className="text-xs text-gray-500 mt-1">
@@ -1404,12 +1413,12 @@ export default function ProductRegistrationApp() {
                         value={newLocationName}
                         onChange={(e) => setNewLocationName(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && addNewLocation()}
-                        className="h-12"
+                        className="h-10 sm:h-12"
                       />
                       <Button
                         onClick={addNewLocation}
                         disabled={!newLocationName.trim() || connectionStatus !== "connected"}
-                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                        className="bg-amber-600 hover:bg-amber-700 h-10 sm:h-12 px-6"
                       >
                         Toevoegen
                       </Button>
@@ -1430,7 +1439,7 @@ export default function ProductRegistrationApp() {
                             const file = e.target.files?.[0]
                             if (file) handleFileImport(file, "locations")
                           }}
-                          className="h-12"
+                          className="h-10 sm:h-12"
                           disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -1438,7 +1447,7 @@ export default function ProductRegistrationApp() {
                         </p>
                       </div>
                       <div className="flex flex-col justify-end">
-                        <Button onClick={() => exportTemplate("locations")} variant="outline" className="h-12">
+                        <Button onClick={() => exportTemplate("locations")} variant="outline" className="h-10 sm:h-12">
                           📥 Download Template
                         </Button>
                         <p className="text-xs text-gray-500 mt-1">
@@ -1493,12 +1502,12 @@ export default function ProductRegistrationApp() {
                         value={newPurposeName}
                         onChange={(e) => setNewPurposeName(e.target.value)}
                         onKeyPress={(e) => e.key === "Enter" && addNewPurpose()}
-                        className="h-12"
+                        className="h-10 sm:h-12"
                       />
                       <Button
                         onClick={addNewPurpose}
                         disabled={!newPurposeName.trim() || connectionStatus !== "connected"}
-                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
+                        className="bg-amber-600 hover:bg-amber-700 h-10 sm:h-12 px-6"
                       >
                         Toevoegen
                       </Button>
@@ -1519,7 +1528,7 @@ export default function ProductRegistrationApp() {
                             const file = e.target.files?.[0]
                             if (file) handleFileImport(file, "purposes")
                           }}
-                          className="h-12"
+                          className="h-10 sm:h-12"
                           disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -1527,7 +1536,7 @@ export default function ProductRegistrationApp() {
                         </p>
                       </div>
                       <div className="flex flex-col justify-end">
-                        <Button onClick={() => exportTemplate("purposes")} variant="outline" className="h-12">
+                        <Button onClick={() => exportTemplate("purposes")} variant="outline" className="h-10 sm:h-12">
                           📥 Download Template
                         </Button>
                         <p className="text-xs text-gray-500 mt-1">
@@ -1565,6 +1574,241 @@ export default function ProductRegistrationApp() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+          <TabsContent value="statistics">
+            <div className="space-y-6">
+              {/* Overzicht Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Totaal Registraties</p>
+                        <p className="text-2xl font-bold text-gray-900">{entries.length}</p>
+                      </div>
+                      <div className="text-3xl">📊</div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Actieve Gebruikers</p>
+                        <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+                      </div>
+                      <div className="text-3xl">👥</div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Producten</p>
+                        <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+                      </div>
+                      <div className="text-3xl">📦</div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Locaties</p>
+                        <p className="text-2xl font-bold text-gray-900">{locations.length}</p>
+                      </div>
+                      <div className="text-3xl">📍</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Top Statistieken */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Meest Actieve Gebruikers */}
+                <Card className="shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+                    <CardTitle className="flex items-center gap-2">👑 Meest Actieve Gebruikers</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {(() => {
+                        const userStats = users
+                          .map((user) => ({
+                            name: user,
+                            count: entries.filter((entry) => entry.user === user).length,
+                          }))
+                          .sort((a, b) => b.count - a.count)
+                          .slice(0, 5)
+
+                        return userStats.length > 0 ? (
+                          userStats.map((user, index) => (
+                            <div key={user.name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">
+                                  {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "👤"}
+                                </span>
+                                <span className="font-medium">{user.name}</span>
+                              </div>
+                              <Badge variant="outline">{user.count} registraties</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">Nog geen registraties beschikbaar</p>
+                        )
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Meest Gebruikte Producten */}
+                <Card className="shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
+                    <CardTitle className="flex items-center gap-2">🏆 Meest Gebruikte Producten</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {(() => {
+                        const productStats = products
+                          .map((product) => ({
+                            name: product.name,
+                            count: entries.filter((entry) => entry.product === product.name).length,
+                          }))
+                          .sort((a, b) => b.count - a.count)
+                          .slice(0, 5)
+
+                        return productStats.length > 0 ? (
+                          productStats.map((product, index) => (
+                            <div
+                              key={product.name}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">
+                                  {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "📦"}
+                                </span>
+                                <span className="font-medium text-sm">{product.name}</span>
+                              </div>
+                              <Badge variant="outline">{product.count}x gebruikt</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">Nog geen registraties beschikbaar</p>
+                        )
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recente Activiteit */}
+              <Card className="shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                  <CardTitle className="flex items-center gap-2">⏰ Recente Activiteit (Laatste 10)</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {entries.length > 0 ? (
+                    <div className="space-y-2">
+                      {entries.slice(0, 10).map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg gap-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-white text-xs">
+                              {entry.user}
+                            </Badge>
+                            <span className="text-sm font-medium">{entry.product}</span>
+                            <span className="text-xs text-gray-500">@ {entry.location}</span>
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {entry.date} {entry.time}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">Nog geen registraties beschikbaar</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Locatie en Doel Statistieken */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Populaire Locaties */}
+                <Card className="shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b">
+                    <CardTitle className="flex items-center gap-2">📍 Populaire Locaties</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {(() => {
+                        const locationStats = locations
+                          .map((location) => ({
+                            name: location,
+                            count: entries.filter((entry) => entry.location === location).length,
+                          }))
+                          .sort((a, b) => b.count - a.count)
+                          .slice(0, 5)
+
+                        return locationStats.length > 0 ? (
+                          locationStats.map((location) => (
+                            <div
+                              key={location.name}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                            >
+                              <span className="font-medium text-sm">{location.name}</span>
+                              <Badge variant="outline">{location.count} keer gebruikt</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">Nog geen registraties beschikbaar</p>
+                        )
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Populaire Doelen */}
+                <Card className="shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-rose-50 to-pink-50 border-b">
+                    <CardTitle className="flex items-center gap-2">🎯 Populaire Doelen</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {(() => {
+                        const purposeStats = purposes
+                          .map((purpose) => ({
+                            name: purpose,
+                            count: entries.filter((entry) => entry.purpose === purpose).length,
+                          }))
+                          .sort((a, b) => b.count - a.count)
+                          .slice(0, 5)
+
+                        return purposeStats.length > 0 ? (
+                          purposeStats.map((purpose) => (
+                            <div
+                              key={purpose.name}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                            >
+                              <span className="font-medium text-sm">{purpose.name}</span>
+                              <Badge variant="outline">{purpose.count} keer gebruikt</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">Nog geen registraties beschikbaar</p>
+                        )
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
