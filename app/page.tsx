@@ -432,6 +432,10 @@ export default function ProductRegistrationApp() {
       const result = await saveRegistration(newEntry)
 
       if (result.data) {
+        // Direct de registratie toevoegen aan de lijst als fallback voor realtime updates
+        console.log("Registratie direct toevoegen aan lijst:", result.data)
+        setEntries((prevEntries) => [result.data, ...prevEntries])
+
         // Reset form
         setSelectedProduct("")
         setLocation("")
