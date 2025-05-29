@@ -1135,10 +1135,12 @@ export default function ProductRegistrationApp() {
             {/* Footer logo */}
             <div className="flex items-center mb-4 md:mb-0">
               <div className="flex items-center mr-4">
-                <div className="w-1 h-6 bg-amber-500 mr-2"></div>
-                <div className="text-lg font-bold text-gray-700">DEMATIC</div>
+                <img src="/images/interflon-logo.png" alt="Interflon Logo" className="w-8 h-8 mr-2" />
+                <div className="text-lg font-bold text-gray-700">INTERFLON</div>
               </div>
-              <p className="text-sm text-gray-600">© {new Date().getFullYear()} DEMATIC. Alle rechten voorbehouden.</p>
+              <p className="text-sm text-gray-600">
+                © {new Date().getFullYear()} INTERFLON. Alle rechten voorbehouden.
+              </p>
             </div>
             <div className="flex items-center gap-6">
               <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
