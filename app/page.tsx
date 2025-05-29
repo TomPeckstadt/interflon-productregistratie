@@ -28,7 +28,10 @@ import { QRScanner } from "@/components/qr-scanner"
 import { PhotoUpload } from "@/components/photo-upload"
 import { StatisticsDashboard } from "@/components/statistics-dashboard"
 import { ExcelImporter } from "@/components/excel-importer"
-import { saveRegistration, getRegistrations, type RegistrationEntry } from "@/lib/supabase"
+import { InstallPrompt } from "@/components/install-prompt"
+import { OfflineDetector } from "@/components/offline-detector"
+import { PWARegister } from "@/app/pwa-register"
+import { saveRegistration, getRegistrations, type RegistrationEntry } from "@/lib/firebase"
 
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
@@ -80,22 +83,23 @@ export default function ProductRegistrationApp() {
   const loadData = async () => {
     setIsLoading(true)
 
-    // Probeer eerst Supabase (alleen als geconfigureerd)
+    // Probeer eerst Firebase
     try {
-      const { data: supabaseData, error } = await getRegistrations()
+      const { data: firebaseData, error } = await getRegistrations()
 
-      if (!error && supabaseData && supabaseData.length > 0) {
-        // Supabase data beschikbaar
-        setEntries(supabaseData)
+      if (!error && firebaseData && firebaseData.length > 0) {
+        // Firebase data beschikbaar
+        setEntries(firebaseData)
       } else {
-        // Fallback naar localStorage
+        // Geen Firebase data, gebruik localStorage
+        console.log("No Firebase data found, using localStorage")
         const savedEntries = localStorage.getItem("productRegistrations")
         if (savedEntries) {
           setEntries(JSON.parse(savedEntries))
         }
       }
     } catch (error) {
-      console.log("Supabase not available, using localStorage")
+      console.log("Firebase not available, using localStorage")
       // Fallback naar localStorage
       const savedEntries = localStorage.getItem("productRegistrations")
       if (savedEntries) {
@@ -129,20 +133,20 @@ export default function ProductRegistrationApp() {
 
   // Sla gegevens op
   const saveToStorage = async (newEntry: Omit<RegistrationEntry, "id" | "created_at">) => {
-    // Probeer eerst Supabase (alleen als geconfigureerd)
+    // Probeer eerst Firebase
     try {
-      const { data: supabaseData, error } = await saveRegistration(newEntry)
+      const { data: firebaseData, error } = await saveRegistration(newEntry)
 
-      if (!error && supabaseData) {
-        // Supabase succesvol
-        const updatedEntries = [supabaseData, ...entries]
+      if (!error && firebaseData) {
+        // Firebase succesvol
+        const updatedEntries = [firebaseData, ...entries]
         setEntries(updatedEntries)
         // Sla ook op in localStorage als backup
         localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
         return
       }
     } catch (error) {
-      console.log("Supabase not available, using localStorage")
+      console.log("Firebase not available, using localStorage")
     }
 
     // Fallback naar localStorage
@@ -417,6 +421,10 @@ export default function ProductRegistrationApp() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <PWARegister />
+      <InstallPrompt />
+      <OfflineDetector />
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-4">

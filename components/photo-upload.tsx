@@ -6,7 +6,7 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Upload, X } from "lucide-react"
-import { uploadPhoto } from "@/lib/supabase"
+import { uploadPhoto } from "@/lib/firebase"
 
 interface PhotoUploadProps {
   onPhotoUploaded: (url: string) => void
@@ -32,17 +32,18 @@ export function PhotoUpload({ onPhotoUploaded, currentPhoto }: PhotoUploadProps)
     }
     reader.readAsDataURL(file)
 
-    // Probeer upload naar Supabase (als beschikbaar)
+    // Probeer upload naar Firebase (als beschikbaar)
     setIsUploading(true)
     try {
       const fileName = `${Date.now()}-${file.name}`
       const { url, error } = await uploadPhoto(file, fileName)
 
       if (url && !error) {
-        // Supabase upload succesvol - gebruik de URL
+        // Firebase upload succesvol - gebruik de URL
         onPhotoUploaded(url)
+        setPreview(url)
       }
-      // Als Supabase niet beschikbaar is, blijft de lokale preview actief
+      // Als Firebase niet beschikbaar is, blijft de lokale preview actief
     } catch (error) {
       console.error("Upload error:", error)
       // Lokale preview blijft actief

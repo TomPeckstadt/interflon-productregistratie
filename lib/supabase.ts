@@ -20,6 +20,33 @@ export interface RegistrationEntry {
   created_at?: string
 }
 
+// Database setup functie
+export const ensureTableExists = async () => {
+  if (!supabase) return { success: false, error: "Supabase not configured" }
+
+  try {
+    // Probeer eerst een simpele query om te testen of de tabel bestaat
+    const { error: testError } = await supabase.from("registrations").select("id").limit(1)
+
+    if (testError && testError.message.includes("does not exist")) {
+      // Tabel bestaat niet, maak deze aan
+      const { error: createError } = await supabase.rpc("create_registrations_table")
+
+      if (createError) {
+        console.log("Could not create table automatically. Please create it manually.")
+        return { success: false, error: createError }
+      }
+
+      return { success: true, error: null }
+    }
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error("Error ensuring table exists:", error)
+    return { success: false, error }
+  }
+}
+
 // Database functies
 export const saveRegistration = async (entry: Omit<RegistrationEntry, "id" | "created_at">) => {
   // Return early if Supabase is not configured
@@ -30,7 +57,14 @@ export const saveRegistration = async (entry: Omit<RegistrationEntry, "id" | "cr
   try {
     const { data, error } = await supabase.from("registrations").insert([entry]).select()
 
-    if (error) throw error
+    if (error) {
+      // Als de tabel niet bestaat, return error zodat localStorage wordt gebruikt
+      if (error.message.includes("does not exist")) {
+        console.log("Registrations table does not exist yet. Using localStorage fallback.")
+        return { data: null, error: new Error("Table not found") }
+      }
+      throw error
+    }
     return { data: data[0], error: null }
   } catch (error) {
     console.error("Error saving registration:", error)
@@ -47,7 +81,14 @@ export const getRegistrations = async () => {
   try {
     const { data, error } = await supabase.from("registrations").select("*").order("created_at", { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      // Als de tabel niet bestaat, return lege array in plaats van error
+      if (error.message.includes("does not exist")) {
+        console.log("Registrations table does not exist yet. Using localStorage fallback.")
+        return { data: [], error: new Error("Table not found") }
+      }
+      throw error
+    }
     return { data: data || [], error: null }
   } catch (error) {
     console.error("Error fetching registrations:", error)
