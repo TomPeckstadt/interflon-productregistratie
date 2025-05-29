@@ -12,11 +12,21 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// Standaard gegevens
+// Standaard gegevens met QR codes
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
-const DEFAULT_PRODUCTS = ["Laptop Dell XPS", "Monitor Samsung 24", "Muis Logitech", "Toetsenbord Mechanical"]
+const DEFAULT_PRODUCTS = [
+  { name: "Laptop Dell XPS", qrCode: "DELL-XPS-001" },
+  { name: "Monitor Samsung 24", qrCode: "SAM-MON-002" },
+  { name: "Muis Logitech", qrCode: "LOG-MOU-003" },
+  { name: "Toetsenbord Mechanical", qrCode: "MECH-KEY-004" },
+]
 const DEFAULT_LOCATIONS = ["Kantoor 1.1", "Kantoor 1.2", "Vergaderzaal A", "Warehouse", "Thuis"]
 const DEFAULT_PURPOSES = ["Presentatie", "Thuiswerken", "Reparatie", "Training", "Demonstratie"]
+
+interface Product {
+  name: string
+  qrCode: string
+}
 
 interface RegistrationEntry {
   id: string
@@ -27,6 +37,7 @@ interface RegistrationEntry {
   timestamp: string
   date: string
   time: string
+  qrCode?: string
 }
 
 export default function ProductRegistrationApp() {
@@ -40,15 +51,23 @@ export default function ProductRegistrationApp() {
 
   // Beheer states
   const [users, setUsers] = useState<string[]>(DEFAULT_USERS)
-  const [products, setProducts] = useState<string[]>(DEFAULT_PRODUCTS)
+  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
   const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS)
   const [purposes, setPurposes] = useState<string[]>(DEFAULT_PURPOSES)
 
   // Nieuwe item states
   const [newUserName, setNewUserName] = useState("")
   const [newProductName, setNewProductName] = useState("")
+  const [newProductQrCode, setNewProductQrCode] = useState("")
   const [newLocationName, setNewLocationName] = useState("")
   const [newPurposeName, setNewPurposeName] = useState("")
+
+  // QR Scanner states
+  const [showQrScanner, setShowQrScanner] = useState(false)
+  const [qrScanResult, setQrScanResult] = useState("")
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Import states
   const [importMessage, setImportMessage] = useState("")
@@ -73,6 +92,15 @@ export default function ProductRegistrationApp() {
     loadData()
   }, [])
 
+  // Cleanup camera stream when component unmounts
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop())
+      }
+    }
+  }, [cameraStream])
+
   const loadData = () => {
     // Laad registraties
     const savedEntries = localStorage.getItem("productRegistrations")
@@ -89,6 +117,9 @@ export default function ProductRegistrationApp() {
     const savedProducts = localStorage.getItem("customProducts")
     if (savedProducts) {
       setProducts(JSON.parse(savedProducts))
+    } else {
+      // Sla standaard producten op als ze nog niet bestaan
+      localStorage.setItem("customProducts", JSON.stringify(DEFAULT_PRODUCTS))
     }
 
     const savedLocations = localStorage.getItem("customLocations")
@@ -102,7 +133,86 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Excel import functie
+  // QR Scanner functies
+  const startQrScanner = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }, // Gebruik achtercamera op mobiel
+      })
+      setCameraStream(stream)
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play()
+      }
+
+      setShowQrScanner(true)
+
+      // Start QR code detectie
+      setTimeout(() => {
+        scanQrCode()
+      }, 1000)
+    } catch (error) {
+      console.error("Camera toegang geweigerd:", error)
+      setImportError("Camera toegang is vereist voor QR code scanning")
+    }
+  }
+
+  const stopQrScanner = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop())
+      setCameraStream(null)
+    }
+    setShowQrScanner(false)
+  }
+
+  const scanQrCode = () => {
+    if (!videoRef.current || !canvasRef.current) return
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    const context = canvas.getContext("2d")
+
+    if (!context) return
+
+    // Stel canvas grootte in
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+
+    // Teken video frame op canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    // Simuleer QR code detectie (in echte implementatie zou je een QR library gebruiken)
+    // Voor demo doeleinden accepteren we handmatige input
+    const qrInput = prompt("Scan QR code of voer QR code handmatig in:")
+
+    if (qrInput) {
+      handleQrCodeDetected(qrInput)
+    } else if (showQrScanner) {
+      // Probeer opnieuw na 1 seconde
+      setTimeout(scanQrCode, 1000)
+    }
+  }
+
+  const handleQrCodeDetected = (qrCode: string) => {
+    setQrScanResult(qrCode)
+
+    // Zoek product op basis van QR code
+    const foundProduct = products.find((p) => p.qrCode === qrCode)
+
+    if (foundProduct) {
+      setSelectedProduct(foundProduct.name)
+      setImportMessage(`✅ Product gevonden: ${foundProduct.name}`)
+      setTimeout(() => setImportMessage(""), 3000)
+    } else {
+      setImportError(`❌ Geen product gevonden voor QR code: ${qrCode}`)
+      setTimeout(() => setImportError(""), 3000)
+    }
+
+    stopQrScanner()
+  }
+
+  // Excel import functie (aangepast voor producten met QR codes)
   const handleFileImport = async (file: File, type: "users" | "products" | "locations" | "purposes") => {
     try {
       setImportError("")
@@ -112,17 +222,36 @@ export default function ProductRegistrationApp() {
       let items: string[] = []
 
       if (file.name.endsWith(".csv")) {
-        // CSV verwerking
         const lines = text.split("\n").filter((line) => line.trim())
-        items = lines
-          .map((line) => {
-            // Verwijder quotes en komma's, neem eerste kolom
-            const cleaned = line.split(",")[0].replace(/"/g, "").trim()
-            return cleaned
+
+        if (type === "products") {
+          // Voor producten verwachten we: "Productnaam,QR-Code"
+          const newProducts: Product[] = []
+          lines.forEach((line) => {
+            const [name, qrCode] = line.split(",").map((item) => item.replace(/"/g, "").trim())
+            if (name && qrCode) {
+              newProducts.push({ name, qrCode })
+            }
           })
-          .filter((item) => item && item.length > 0)
+
+          if (newProducts.length > 0) {
+            const existingProducts = products.filter(
+              (p) => !newProducts.some((np) => np.name === p.name || np.qrCode === p.qrCode),
+            )
+            const updatedProducts = [...existingProducts, ...newProducts]
+            setProducts(updatedProducts)
+            localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
+
+            setImportMessage(`✅ ${newProducts.length} nieuwe producten geïmporteerd!`)
+            setTimeout(() => setImportMessage(""), 5000)
+          }
+          return
+        } else {
+          items = lines
+            .map((line) => line.split(",")[0].replace(/"/g, "").trim())
+            .filter((item) => item && item.length > 0)
+        }
       } else {
-        // Probeer als tekst bestand (elke regel is een item)
         items = text
           .split("\n")
           .map((line) => line.trim())
@@ -134,7 +263,7 @@ export default function ProductRegistrationApp() {
         return
       }
 
-      // Update de juiste lijst
+      // Update de juiste lijst (behalve producten, die zijn hierboven al afgehandeld)
       let currentList: string[] = []
       let setList: (items: string[]) => void
       let storageKey: string
@@ -144,11 +273,6 @@ export default function ProductRegistrationApp() {
           currentList = users
           setList = setUsers
           storageKey = "customUsers"
-          break
-        case "products":
-          currentList = products
-          setList = setProducts
-          storageKey = "customProducts"
           break
         case "locations":
           currentList = locations
@@ -160,9 +284,10 @@ export default function ProductRegistrationApp() {
           setList = setPurposes
           storageKey = "customPurposes"
           break
+        default:
+          return
       }
 
-      // Voeg nieuwe items toe (vermijd duplicaten)
       const newItems = items.filter((item) => !currentList.includes(item))
       const updatedList = [...currentList, ...newItems]
 
@@ -186,7 +311,7 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Export template functie
+  // Export template functie (aangepast voor producten)
   const exportTemplate = (type: "users" | "products" | "locations" | "purposes") => {
     let templateData: string[] = []
     let filename = ""
@@ -198,11 +323,11 @@ export default function ProductRegistrationApp() {
         break
       case "products":
         templateData = [
-          "Laptop Dell XPS",
-          "Monitor Samsung 24",
-          "Muis Logitech",
-          "Toetsenbord Mechanical",
-          "Nieuw Product",
+          "Laptop Dell XPS,DELL-XPS-001",
+          "Monitor Samsung 24,SAM-MON-002",
+          "Muis Logitech,LOG-MOU-003",
+          "Toetsenbord Mechanical,MECH-KEY-004",
+          "Nieuw Product,NEW-PROD-005",
         ]
         filename = "producten-template.csv"
         break
@@ -239,6 +364,8 @@ export default function ProductRegistrationApp() {
     setIsLoading(true)
 
     const now = new Date()
+    const productQrCode = products.find((p) => p.name === selectedProduct)?.qrCode || ""
+
     const newEntry: RegistrationEntry = {
       id: Date.now().toString(),
       user: currentUser,
@@ -248,6 +375,7 @@ export default function ProductRegistrationApp() {
       timestamp: now.toISOString(),
       date: now.toLocaleDateString("nl-NL"),
       time: now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }),
+      qrCode: productQrCode,
     }
 
     const updatedEntries = [newEntry, ...entries]
@@ -258,6 +386,7 @@ export default function ProductRegistrationApp() {
     setSelectedProduct("")
     setLocation("")
     setPurpose("")
+    setQrScanResult("")
 
     // Toon success bericht
     setShowSuccess(true)
@@ -268,7 +397,7 @@ export default function ProductRegistrationApp() {
   // Export naar CSV
   const exportToCSV = () => {
     const filteredEntries = getFilteredAndSortedEntries()
-    const headers = ["Datum", "Tijd", "Gebruiker", "Product", "Locatie", "Doel"]
+    const headers = ["Datum", "Tijd", "Gebruiker", "Product", "QR Code", "Locatie", "Doel"]
     const csvContent = [
       headers.join(","),
       ...filteredEntries.map((entry) =>
@@ -277,6 +406,7 @@ export default function ProductRegistrationApp() {
           entry.time,
           `"${entry.user}"`,
           `"${entry.product}"`,
+          `"${entry.qrCode || ""}"`,
           `"${entry.location}"`,
           `"${entry.purpose}"`,
         ].join(","),
@@ -308,13 +438,19 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuw product toe
+  // Voeg nieuw product toe (aangepast voor QR codes)
   const addNewProduct = () => {
-    if (newProductName.trim() && !products.includes(newProductName.trim())) {
-      const updatedProducts = [...products, newProductName.trim()]
-      setProducts(updatedProducts)
-      localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
-      setNewProductName("")
+    if (newProductName.trim() && newProductQrCode.trim()) {
+      const existingProduct = products.find(
+        (p) => p.name === newProductName.trim() || p.qrCode === newProductQrCode.trim(),
+      )
+      if (!existingProduct) {
+        const updatedProducts = [...products, { name: newProductName.trim(), qrCode: newProductQrCode.trim() }]
+        setProducts(updatedProducts)
+        localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
+        setNewProductName("")
+        setNewProductQrCode("")
+      }
     }
   }
 
@@ -345,8 +481,8 @@ export default function ProductRegistrationApp() {
     localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
   }
 
-  const removeProduct = (productToRemove: string) => {
-    const updatedProducts = products.filter((product) => product !== productToRemove)
+  const removeProduct = (productToRemove: Product) => {
+    const updatedProducts = products.filter((product) => product.name !== productToRemove.name)
     setProducts(updatedProducts)
     localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
   }
@@ -371,7 +507,8 @@ export default function ProductRegistrationApp() {
         entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase())
+        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (entry.qrCode && entry.qrCode.toLowerCase().includes(searchQuery.toLowerCase()))
 
       const userMatch = !filterUser || filterUser === "all" || entry.user === filterUser
       const productMatch = !filterProduct || entry.product.toLowerCase().includes(filterProduct.toLowerCase())
@@ -522,7 +659,7 @@ export default function ProductRegistrationApp() {
             <Card className="shadow-sm">
               <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
                 <CardTitle className="flex items-center gap-2 text-xl">📦 Nieuw Product Registreren</CardTitle>
-                <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
+                <CardDescription>Scan een QR code of vul onderstaande gegevens handmatig in</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -545,18 +682,29 @@ export default function ProductRegistrationApp() {
 
                     <div className="space-y-2">
                       <Label className="text-base font-medium">📦 Product</Label>
-                      <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
-                        <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Selecteer een product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product} value={product}>
-                              {product}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
+                          <SelectTrigger className="h-12 flex-1">
+                            <SelectValue placeholder="Selecteer een product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map((product) => (
+                              <SelectItem key={product.name} value={product.name}>
+                                {product.name} ({product.qrCode})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          onClick={startQrScanner}
+                          className="h-12 px-4 bg-blue-600 hover:bg-blue-700"
+                          disabled={showQrScanner}
+                        >
+                          📱 Scan QR
+                        </Button>
+                      </div>
+                      {qrScanResult && <p className="text-sm text-green-600">✅ QR Code gescand: {qrScanResult}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -591,6 +739,32 @@ export default function ProductRegistrationApp() {
                       </Select>
                     </div>
                   </div>
+
+                  {/* QR Scanner Modal */}
+                  {showQrScanner && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold">📱 QR Code Scanner</h3>
+                          <Button onClick={stopQrScanner} variant="outline" size="sm">
+                            ✕ Sluiten
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <video ref={videoRef} className="w-full h-64 bg-gray-200 rounded-lg" autoPlay playsInline />
+                          <canvas ref={canvasRef} className="hidden" />
+
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600 mb-4">Richt de camera op een QR code</p>
+                            <Button onClick={scanQrCode} className="w-full">
+                              🔍 Handmatig Scannen
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <Button
                     type="submit"
@@ -636,7 +810,7 @@ export default function ProductRegistrationApp() {
                     <Label htmlFor="search">Zoeken</Label>
                     <Input
                       id="search"
-                      placeholder="Zoek in alle velden..."
+                      placeholder="Zoek in alle velden (inclusief QR codes)..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full"
@@ -758,6 +932,12 @@ export default function ProductRegistrationApp() {
                         </div>
                         <h4 className="font-semibold text-lg mb-2">{entry.product}</h4>
                         <div className="text-sm text-gray-600 space-y-1">
+                          {entry.qrCode && (
+                            <div className="flex items-center gap-2">
+                              <span>📱</span>
+                              <span>QR Code: {entry.qrCode}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2">
                             <span>📍</span>
                             <span>Locatie: {entry.location}</span>
@@ -867,28 +1047,35 @@ export default function ProductRegistrationApp() {
               <Card className="shadow-sm">
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b">
                   <CardTitle className="flex items-center gap-2 text-xl">📦 Producten Beheren</CardTitle>
-                  <CardDescription>Voeg handmatig producten toe of importeer vanuit een bestand</CardDescription>
+                  <CardDescription>
+                    Voeg handmatig producten toe of importeer vanuit een bestand (Formaat: Naam,QR-Code)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
                   {/* Handmatig toevoegen */}
                   <div>
                     <Label className="text-base font-medium mb-2 block">Handmatig toevoegen</Label>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                       <Input
                         placeholder="Voer productnaam in"
                         value={newProductName}
                         onChange={(e) => setNewProductName(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
                         className="h-12"
                       />
-                      <Button
-                        onClick={addNewProduct}
-                        disabled={!newProductName.trim()}
-                        className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
-                      >
-                        Toevoegen
-                      </Button>
+                      <Input
+                        placeholder="Voer QR code in"
+                        value={newProductQrCode}
+                        onChange={(e) => setNewProductQrCode(e.target.value)}
+                        className="h-12"
+                      />
                     </div>
+                    <Button
+                      onClick={addNewProduct}
+                      disabled={!newProductName.trim() || !newProductQrCode.trim()}
+                      className="bg-amber-600 hover:bg-amber-700 h-12 px-6 w-full md:w-auto"
+                    >
+                      Toevoegen
+                    </Button>
                   </div>
 
                   {/* Import sectie */}
@@ -896,11 +1083,11 @@ export default function ProductRegistrationApp() {
                     <Label className="text-base font-medium mb-4 block">📁 Import vanuit bestand</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm text-gray-600 mb-2 block">Selecteer CSV/TXT bestand</Label>
+                        <Label className="text-sm text-gray-600 mb-2 block">Selecteer CSV bestand</Label>
                         <Input
                           ref={productFileInputRef}
                           type="file"
-                          accept=".csv,.txt"
+                          accept=".csv"
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (file) handleFileImport(file, "products")
@@ -908,7 +1095,7 @@ export default function ProductRegistrationApp() {
                           className="h-12"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Ondersteunde formaten: CSV, TXT (één product per regel)
+                          CSV formaat: Productnaam,QR-Code (één product per regel)
                         </p>
                       </div>
                       <div className="flex flex-col justify-end">
@@ -916,7 +1103,7 @@ export default function ProductRegistrationApp() {
                           📥 Download Template
                         </Button>
                         <p className="text-xs text-gray-500 mt-1">
-                          Download een voorbeeldbestand om te zien hoe het formaat eruit moet zien
+                          Download een voorbeeldbestand met het juiste formaat
                         </p>
                       </div>
                     </div>
@@ -931,8 +1118,14 @@ export default function ProductRegistrationApp() {
                 <CardContent className="p-6">
                   <div className="space-y-2">
                     {products.map((product) => (
-                      <div key={product} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                        <span className="font-medium">📦 {product}</span>
+                      <div
+                        key={product.name}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-white"
+                      >
+                        <div>
+                          <span className="font-medium">📦 {product.name}</span>
+                          <div className="text-sm text-gray-500">QR: {product.qrCode}</div>
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"
