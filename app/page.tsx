@@ -11,37 +11,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-// Standaard gegevens met QR codes
-const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
-const DEFAULT_PRODUCTS = [
-  { name: "Laptop Dell XPS", qrCode: "DELL-XPS-001" },
-  { name: "Monitor Samsung 24", qrCode: "SAM-MON-002" },
-  { name: "Muis Logitech", qrCode: "LOG-MOU-003" },
-  { name: "Toetsenbord Mechanical", qrCode: "MECH-KEY-004" },
-]
-const DEFAULT_LOCATIONS = ["Kantoor 1.1", "Kantoor 1.2", "Vergaderzaal A", "Warehouse", "Thuis"]
-const DEFAULT_PURPOSES = ["Presentatie", "Thuiswerken", "Reparatie", "Training", "Demonstratie"]
-
-interface Product {
-  name: string
-  qrCode: string
-}
-
-interface RegistrationEntry {
-  id: string
-  user: string
-  product: string
-  location: string
-  purpose: string
-  timestamp: string
-  date: string
-  time: string
-  qrCode?: string
-}
+import {
+  fetchProducts,
+  saveProduct,
+  deleteProduct,
+  fetchUsers,
+  saveUser,
+  deleteUser,
+  fetchLocations,
+  saveLocation,
+  deleteLocation,
+  fetchPurposes,
+  savePurpose,
+  deletePurpose,
+  fetchRegistrations,
+  saveRegistration,
+  subscribeToProducts,
+  subscribeToUsers,
+  subscribeToLocations,
+  subscribeToPurposes,
+  subscribeToRegistrations,
+  type Product,
+  type RegistrationEntry,
+} from "@/lib/supabase"
 
 export default function ProductRegistrationApp() {
-  const [currentUser, setCurrentUser] = useState(DEFAULT_USERS[0])
+  const [currentUser, setCurrentUser] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("")
   const [location, setLocation] = useState("")
   const [purpose, setPurpose] = useState("")
@@ -50,10 +45,10 @@ export default function ProductRegistrationApp() {
   const [isLoading, setIsLoading] = useState(false)
 
   // Beheer states
-  const [users, setUsers] = useState<string[]>(DEFAULT_USERS)
-  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS)
-  const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS)
-  const [purposes, setPurposes] = useState<string[]>(DEFAULT_PURPOSES)
+  const [users, setUsers] = useState<string[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [locations, setLocations] = useState<string[]>([])
+  const [purposes, setPurposes] = useState<string[]>([])
 
   // Nieuwe item states
   const [newUserName, setNewUserName] = useState("")
@@ -73,6 +68,7 @@ export default function ProductRegistrationApp() {
   // Import states
   const [importMessage, setImportMessage] = useState("")
   const [importError, setImportError] = useState("")
+  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "error">("connecting")
   const userFileInputRef = useRef<HTMLInputElement>(null)
   const productFileInputRef = useRef<HTMLInputElement>(null)
   const locationFileInputRef = useRef<HTMLInputElement>(null)
@@ -88,9 +84,10 @@ export default function ProductRegistrationApp() {
   const [sortBy, setSortBy] = useState<"date" | "user" | "product">("date")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
-  // Laad opgeslagen gegevens bij start
+  // Laad alle data bij start
   useEffect(() => {
-    loadData()
+    loadAllData()
+    setupRealtimeSubscriptions()
   }, [])
 
   // Cleanup camera stream when component unmounts
@@ -102,35 +99,56 @@ export default function ProductRegistrationApp() {
     }
   }, [cameraStream])
 
-  const loadData = () => {
-    // Laad registraties
-    const savedEntries = localStorage.getItem("productRegistrations")
-    if (savedEntries) {
-      setEntries(JSON.parse(savedEntries))
-    }
+  const loadAllData = async () => {
+    try {
+      setConnectionStatus("connecting")
 
-    // Laad aangepaste lijsten
-    const savedUsers = localStorage.getItem("customUsers")
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers))
-    }
+      // Laad alle data parallel
+      const [usersResult, productsResult, locationsResult, purposesResult, registrationsResult] = await Promise.all([
+        fetchUsers(),
+        fetchProducts(),
+        fetchLocations(),
+        fetchPurposes(),
+        fetchRegistrations(),
+      ])
 
-    const savedProducts = localStorage.getItem("customProducts")
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts))
-    } else {
-      // Sla standaard producten op als ze nog niet bestaan
-      localStorage.setItem("customProducts", JSON.stringify(DEFAULT_PRODUCTS))
-    }
+      if (usersResult.data) {
+        setUsers(usersResult.data)
+        if (usersResult.data.length > 0 && !currentUser) {
+          setCurrentUser(usersResult.data[0])
+        }
+      }
 
-    const savedLocations = localStorage.getItem("customLocations")
-    if (savedLocations) {
-      setLocations(JSON.parse(savedLocations))
-    }
+      if (productsResult.data) setProducts(productsResult.data)
+      if (locationsResult.data) setLocations(locationsResult.data)
+      if (purposesResult.data) setPurposes(purposesResult.data)
+      if (registrationsResult.data) setEntries(registrationsResult.data)
 
-    const savedPurposes = localStorage.getItem("customPurposes")
-    if (savedPurposes) {
-      setPurposes(JSON.parse(savedPurposes))
+      setConnectionStatus("connected")
+      setImportMessage("✅ Verbonden met database - alle data gesynchroniseerd!")
+      setTimeout(() => setImportMessage(""), 3000)
+    } catch (error) {
+      console.error("Error loading data:", error)
+      setConnectionStatus("error")
+      setImportError("❌ Fout bij verbinden met database")
+    }
+  }
+
+  const setupRealtimeSubscriptions = () => {
+    // Setup realtime subscriptions voor automatische sync
+    const unsubscribeProducts = subscribeToProducts(setProducts)
+    const unsubscribeUsers = subscribeToUsers(setUsers)
+    const unsubscribeLocations = subscribeToLocations(setLocations)
+    const unsubscribePurposes = subscribeToPurposes(setPurposes)
+    const unsubscribeRegistrations = subscribeToRegistrations(setEntries)
+
+    // Cleanup functie
+    return () => {
+      unsubscribeProducts?.unsubscribe()
+      unsubscribeUsers?.unsubscribe()
+      unsubscribeLocations?.unsubscribe()
+      unsubscribePurposes?.unsubscribe()
+      unsubscribeRegistrations?.unsubscribe()
     }
   }
 
@@ -138,7 +156,7 @@ export default function ProductRegistrationApp() {
   const startQrScanner = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }, // Gebruik achtercamera op mobiel
+        video: { facingMode: "environment" },
       })
       setCameraStream(stream)
 
@@ -149,7 +167,6 @@ export default function ProductRegistrationApp() {
 
       setShowQrScanner(true)
 
-      // Start QR code detectie
       setTimeout(() => {
         scanQrCode()
       }, 1000)
@@ -176,21 +193,15 @@ export default function ProductRegistrationApp() {
 
     if (!context) return
 
-    // Stel canvas grootte in
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-
-    // Teken video frame op canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-    // Simuleer QR code detectie (in echte implementatie zou je een QR library gebruiken)
-    // Voor demo doeleinden accepteren we handmatige input
     const qrInput = prompt("Scan QR code of voer QR code handmatig in:")
 
     if (qrInput) {
       handleQrCodeDetected(qrInput)
     } else if (showQrScanner) {
-      // Probeer opnieuw na 1 seconde
       setTimeout(scanQrCode, 1000)
     }
   }
@@ -199,8 +210,7 @@ export default function ProductRegistrationApp() {
     setQrScanResult(qrCode)
 
     if (qrScanMode === "registration") {
-      // Zoek product op basis van QR code voor registratie
-      const foundProduct = products.find((p) => p.qrCode === qrCode)
+      const foundProduct = products.find((p) => p.qrcode === qrCode)
 
       if (foundProduct) {
         setSelectedProduct(foundProduct.name)
@@ -211,7 +221,6 @@ export default function ProductRegistrationApp() {
         setTimeout(() => setImportError(""), 3000)
       }
     } else if (qrScanMode === "product-management") {
-      // Vul QR code in voor product beheer
       setNewProductQrCode(qrCode)
       setImportMessage(`✅ QR code gescand: ${qrCode}`)
       setTimeout(() => setImportMessage(""), 3000)
@@ -220,7 +229,7 @@ export default function ProductRegistrationApp() {
     stopQrScanner()
   }
 
-  // Excel import functie (aangepast voor producten met QR codes)
+  // Excel import functie
   const handleFileImport = async (file: File, type: "users" | "products" | "locations" | "purposes") => {
     try {
       setImportError("")
@@ -233,23 +242,18 @@ export default function ProductRegistrationApp() {
         const lines = text.split("\n").filter((line) => line.trim())
 
         if (type === "products") {
-          // Voor producten verwachten we: "Productnaam,QR-Code"
           const newProducts: Product[] = []
           lines.forEach((line) => {
-            const [name, qrCode] = line.split(",").map((item) => item.replace(/"/g, "").trim())
-            if (name && qrCode) {
-              newProducts.push({ name, qrCode })
+            const [name, qrcode] = line.split(",").map((item) => item.replace(/"/g, "").trim())
+            if (name && qrcode) {
+              newProducts.push({ name, qrcode })
             }
           })
 
           if (newProducts.length > 0) {
-            const existingProducts = products.filter(
-              (p) => !newProducts.some((np) => np.name === p.name || np.qrCode === p.qrCode),
-            )
-            const updatedProducts = [...existingProducts, ...newProducts]
-            setProducts(updatedProducts)
-            localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
-
+            for (const product of newProducts) {
+              await saveProduct(product)
+            }
             setImportMessage(`✅ ${newProducts.length} nieuwe producten geïmporteerd!`)
             setTimeout(() => setImportMessage(""), 5000)
           }
@@ -271,39 +275,37 @@ export default function ProductRegistrationApp() {
         return
       }
 
-      // Update de juiste lijst (behalve producten, die zijn hierboven al afgehandeld)
-      let currentList: string[] = []
-      let setList: (items: string[]) => void
-      let storageKey: string
-
-      switch (type) {
-        case "users":
-          currentList = users
-          setList = setUsers
-          storageKey = "customUsers"
-          break
-        case "locations":
-          currentList = locations
-          setList = setLocations
-          storageKey = "customLocations"
-          break
-        case "purposes":
-          currentList = purposes
-          setList = setPurposes
-          storageKey = "customPurposes"
-          break
-        default:
-          return
+      // Save items to database
+      let savedCount = 0
+      for (const item of items) {
+        try {
+          switch (type) {
+            case "users":
+              if (!users.includes(item)) {
+                await saveUser(item)
+                savedCount++
+              }
+              break
+            case "locations":
+              if (!locations.includes(item)) {
+                await saveLocation(item)
+                savedCount++
+              }
+              break
+            case "purposes":
+              if (!purposes.includes(item)) {
+                await savePurpose(item)
+                savedCount++
+              }
+              break
+          }
+        } catch (error) {
+          console.error(`Error saving ${item}:`, error)
+        }
       }
 
-      const newItems = items.filter((item) => !currentList.includes(item))
-      const updatedList = [...currentList, ...newItems]
-
-      setList(updatedList)
-      localStorage.setItem(storageKey, JSON.stringify(updatedList))
-
       setImportMessage(
-        `✅ ${newItems.length} nieuwe ${type} geïmporteerd! (${items.length - newItems.length} duplicaten overgeslagen)`,
+        `✅ ${savedCount} nieuwe ${type} geïmporteerd! (${items.length - savedCount} duplicaten overgeslagen)`,
       )
 
       // Reset file input
@@ -319,7 +321,7 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Export template functie (aangepast voor producten)
+  // Export template functie
   const exportTemplate = (type: "users" | "products" | "locations" | "purposes") => {
     let templateData: string[] = []
     let filename = ""
@@ -362,7 +364,7 @@ export default function ProductRegistrationApp() {
   }
 
   // Registreer nieuw item
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!currentUser || !selectedProduct || !location || !purpose) {
@@ -371,34 +373,41 @@ export default function ProductRegistrationApp() {
 
     setIsLoading(true)
 
-    const now = new Date()
-    const productQrCode = products.find((p) => p.name === selectedProduct)?.qrCode || ""
+    try {
+      const now = new Date()
+      const productQrcode = products.find((p) => p.name === selectedProduct)?.qrcode || ""
 
-    const newEntry: RegistrationEntry = {
-      id: Date.now().toString(),
-      user: currentUser,
-      product: selectedProduct,
-      location,
-      purpose,
-      timestamp: now.toISOString(),
-      date: now.toLocaleDateString("nl-NL"),
-      time: now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }),
-      qrCode: productQrCode,
+      const newEntry: Omit<RegistrationEntry, "id" | "created_at"> = {
+        user: currentUser,
+        product: selectedProduct,
+        location,
+        purpose,
+        timestamp: now.toISOString(),
+        date: now.toLocaleDateString("nl-NL"),
+        time: now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }),
+        qrcode: productQrcode,
+      }
+
+      const result = await saveRegistration(newEntry)
+
+      if (result.data) {
+        // Reset form
+        setSelectedProduct("")
+        setLocation("")
+        setPurpose("")
+        setQrScanResult("")
+
+        // Toon success bericht
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 3000)
+      } else {
+        setImportError("Fout bij opslaan registratie")
+      }
+    } catch (error) {
+      console.error("Error saving registration:", error)
+      setImportError("Fout bij opslaan registratie")
     }
 
-    const updatedEntries = [newEntry, ...entries]
-    setEntries(updatedEntries)
-    localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
-
-    // Reset form
-    setSelectedProduct("")
-    setLocation("")
-    setPurpose("")
-    setQrScanResult("")
-
-    // Toon success bericht
-    setShowSuccess(true)
-    setTimeout(() => setShowSuccess(false), 3000)
     setIsLoading(false)
   }
 
@@ -414,7 +423,7 @@ export default function ProductRegistrationApp() {
           entry.time,
           `"${entry.user}"`,
           `"${entry.product}"`,
-          `"${entry.qrCode || ""}"`,
+          `"${entry.qrcode || ""}"`,
           `"${entry.location}"`,
           `"${entry.purpose}"`,
         ].join(","),
@@ -437,73 +446,109 @@ export default function ProductRegistrationApp() {
   }
 
   // Voeg nieuwe gebruiker toe
-  const addNewUser = () => {
+  const addNewUser = async () => {
     if (newUserName.trim() && !users.includes(newUserName.trim())) {
-      const updatedUsers = [...users, newUserName.trim()]
-      setUsers(updatedUsers)
-      localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
-      setNewUserName("")
+      try {
+        await saveUser(newUserName.trim())
+        setNewUserName("")
+        setImportMessage("✅ Gebruiker toegevoegd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      } catch (error) {
+        setImportError("Fout bij toevoegen gebruiker")
+      }
     }
   }
 
-  // Voeg nieuw product toe (aangepast voor optionele QR codes)
-  const addNewProduct = () => {
+  // Voeg nieuw product toe
+  const addNewProduct = async () => {
     if (newProductName.trim()) {
-      const qrCode = newProductQrCode.trim() || "" // QR code is optioneel
-      const existingProduct = products.find((p) => p.name === newProductName.trim() || (qrCode && p.qrCode === qrCode))
-      if (!existingProduct) {
-        const updatedProducts = [...products, { name: newProductName.trim(), qrCode }]
-        setProducts(updatedProducts)
-        localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
-        setNewProductName("")
-        setNewProductQrCode("")
+      try {
+        const qrcode = newProductQrCode.trim() || ""
+        const existingProduct = products.find(
+          (p) => p.name === newProductName.trim() || (qrcode && p.qrcode === qrcode),
+        )
+        if (!existingProduct) {
+          await saveProduct({ name: newProductName.trim(), qrcode })
+          setNewProductName("")
+          setNewProductQrCode("")
+          setImportMessage("✅ Product toegevoegd!")
+          setTimeout(() => setImportMessage(""), 2000)
+        }
+      } catch (error) {
+        setImportError("Fout bij toevoegen product")
       }
     }
   }
 
   // Voeg nieuwe locatie toe
-  const addNewLocation = () => {
+  const addNewLocation = async () => {
     if (newLocationName.trim() && !locations.includes(newLocationName.trim())) {
-      const updatedLocations = [...locations, newLocationName.trim()]
-      setLocations(updatedLocations)
-      localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
-      setNewLocationName("")
+      try {
+        await saveLocation(newLocationName.trim())
+        setNewLocationName("")
+        setImportMessage("✅ Locatie toegevoegd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      } catch (error) {
+        setImportError("Fout bij toevoegen locatie")
+      }
     }
   }
 
   // Voeg nieuw doel toe
-  const addNewPurpose = () => {
+  const addNewPurpose = async () => {
     if (newPurposeName.trim() && !purposes.includes(newPurposeName.trim())) {
-      const updatedPurposes = [...purposes, newPurposeName.trim()]
-      setPurposes(updatedPurposes)
-      localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
-      setNewPurposeName("")
+      try {
+        await savePurpose(newPurposeName.trim())
+        setNewPurposeName("")
+        setImportMessage("✅ Doel toegevoegd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      } catch (error) {
+        setImportError("Fout bij toevoegen doel")
+      }
     }
   }
 
   // Verwijder item
-  const removeUser = (userToRemove: string) => {
-    const updatedUsers = users.filter((user) => user !== userToRemove)
-    setUsers(updatedUsers)
-    localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
+  const removeUser = async (userToRemove: string) => {
+    try {
+      await deleteUser(userToRemove)
+      setImportMessage("✅ Gebruiker verwijderd!")
+      setTimeout(() => setImportMessage(""), 2000)
+    } catch (error) {
+      setImportError("Fout bij verwijderen gebruiker")
+    }
   }
 
-  const removeProduct = (productToRemove: Product) => {
-    const updatedProducts = products.filter((product) => product.name !== productToRemove.name)
-    setProducts(updatedProducts)
-    localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
+  const removeProduct = async (productToRemove: Product) => {
+    try {
+      if (productToRemove.id) {
+        await deleteProduct(productToRemove.id)
+        setImportMessage("✅ Product verwijderd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
+    } catch (error) {
+      setImportError("Fout bij verwijderen product")
+    }
   }
 
-  const removeLocation = (locationToRemove: string) => {
-    const updatedLocations = locations.filter((loc) => loc !== locationToRemove)
-    setLocations(updatedLocations)
-    localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
+  const removeLocation = async (locationToRemove: string) => {
+    try {
+      await deleteLocation(locationToRemove)
+      setImportMessage("✅ Locatie verwijderd!")
+      setTimeout(() => setImportMessage(""), 2000)
+    } catch (error) {
+      setImportError("Fout bij verwijderen locatie")
+    }
   }
 
-  const removePurpose = (purposeToRemove: string) => {
-    const updatedPurposes = purposes.filter((p) => p !== purposeToRemove)
-    setPurposes(updatedPurposes)
-    localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
+  const removePurpose = async (purposeToRemove: string) => {
+    try {
+      await deletePurpose(purposeToRemove)
+      setImportMessage("✅ Doel verwijderd!")
+      setTimeout(() => setImportMessage(""), 2000)
+    } catch (error) {
+      setImportError("Fout bij verwijderen doel")
+    }
   }
 
   // Filter en zoek functies
@@ -515,7 +560,7 @@ export default function ProductRegistrationApp() {
         entry.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (entry.qrCode && entry.qrCode.toLowerCase().includes(searchQuery.toLowerCase()))
+        (entry.qrcode && entry.qrcode.toLowerCase().includes(searchQuery.toLowerCase()))
 
       const userMatch = !filterUser || filterUser === "all" || entry.user === filterUser
       const productMatch = !filterProduct || entry.product.toLowerCase().includes(filterProduct.toLowerCase())
@@ -599,8 +644,22 @@ export default function ProductRegistrationApp() {
             {/* Status info */}
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Systeem actief</span>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    connectionStatus === "connected"
+                      ? "bg-green-500"
+                      : connectionStatus === "connecting"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                  }`}
+                ></div>
+                <span>
+                  {connectionStatus === "connected"
+                    ? "Database verbonden"
+                    : connectionStatus === "connecting"
+                      ? "Verbinden..."
+                      : "Verbindingsfout"}
+                </span>
               </div>
               <div className="hidden md:block">{entries.length} registraties</div>
             </div>
@@ -675,7 +734,7 @@ export default function ProductRegistrationApp() {
                       <Label className="text-base font-medium">👤 Gebruiker</Label>
                       <Select value={currentUser} onValueChange={setCurrentUser} required>
                         <SelectTrigger className="h-12">
-                          <SelectValue />
+                          <SelectValue placeholder="Selecteer gebruiker" />
                         </SelectTrigger>
                         <SelectContent>
                           {users.map((user) => (
@@ -696,8 +755,8 @@ export default function ProductRegistrationApp() {
                           </SelectTrigger>
                           <SelectContent>
                             {products.map((product) => (
-                              <SelectItem key={product.name} value={product.name}>
-                                {product.name} ({product.qrCode})
+                              <SelectItem key={product.id} value={product.name}>
+                                {product.name} {product.qrcode && `(${product.qrcode})`}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -779,7 +838,7 @@ export default function ProductRegistrationApp() {
                   <Button
                     type="submit"
                     className="w-full bg-amber-600 hover:bg-amber-700 h-14 text-lg font-medium"
-                    disabled={isLoading}
+                    disabled={isLoading || connectionStatus !== "connected"}
                   >
                     {isLoading ? "Bezig met registreren..." : "💾 Product Registreren"}
                   </Button>
@@ -942,10 +1001,10 @@ export default function ProductRegistrationApp() {
                         </div>
                         <h4 className="font-semibold text-lg mb-2">{entry.product}</h4>
                         <div className="text-sm text-gray-600 space-y-1">
-                          {entry.qrCode && (
+                          {entry.qrcode && (
                             <div className="flex items-center gap-2">
                               <span>📱</span>
-                              <span>QR Code: {entry.qrCode}</span>
+                              <span>QR Code: {entry.qrcode}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-2">
@@ -986,7 +1045,7 @@ export default function ProductRegistrationApp() {
                       />
                       <Button
                         onClick={addNewUser}
-                        disabled={!newUserName.trim()}
+                        disabled={!newUserName.trim() || connectionStatus !== "connected"}
                         className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                       >
                         Toevoegen
@@ -1009,6 +1068,7 @@ export default function ProductRegistrationApp() {
                             if (file) handleFileImport(file, "users")
                           }}
                           className="h-12"
+                          disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           Ondersteunde formaten: CSV, TXT (één gebruiker per regel)
@@ -1041,6 +1101,7 @@ export default function ProductRegistrationApp() {
                           variant="outline"
                           onClick={() => removeUser(user)}
                           className="text-red-600 hover:text-red-700"
+                          disabled={connectionStatus !== "connected"}
                         >
                           🗑️
                         </Button>
@@ -1082,9 +1143,7 @@ export default function ProductRegistrationApp() {
                         <Button
                           type="button"
                           onClick={() => {
-                            // Start QR scanner voor product beheer
                             startQrScanner()
-                            // Set een flag dat we in product management mode zijn
                             setQrScanMode("product-management")
                           }}
                           className="h-12 px-4 bg-blue-600 hover:bg-blue-700"
@@ -1096,7 +1155,7 @@ export default function ProductRegistrationApp() {
                     </div>
                     <Button
                       onClick={addNewProduct}
-                      disabled={!newProductName.trim()}
+                      disabled={!newProductName.trim() || connectionStatus !== "connected"}
                       className="bg-amber-600 hover:bg-amber-700 h-12 px-6 w-full md:w-auto"
                     >
                       Toevoegen
@@ -1118,6 +1177,7 @@ export default function ProductRegistrationApp() {
                             if (file) handleFileImport(file, "products")
                           }}
                           className="h-12"
+                          disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           CSV formaat: Productnaam,QR-Code (één product per regel)
@@ -1144,13 +1204,13 @@ export default function ProductRegistrationApp() {
                   <div className="space-y-2">
                     {products.map((product) => (
                       <div
-                        key={product.name}
+                        key={product.id}
                         className="flex items-center justify-between p-3 border rounded-lg bg-white"
                       >
                         <div>
                           <span className="font-medium">📦 {product.name}</span>
                           <div className="text-sm text-gray-500">
-                            {product.qrCode ? `QR: ${product.qrCode}` : "Geen QR code"}
+                            {product.qrcode ? `QR: ${product.qrcode}` : "Geen QR code"}
                           </div>
                         </div>
                         <Button
@@ -1158,6 +1218,7 @@ export default function ProductRegistrationApp() {
                           variant="outline"
                           onClick={() => removeProduct(product)}
                           className="text-red-600 hover:text-red-700"
+                          disabled={connectionStatus !== "connected"}
                         >
                           🗑️
                         </Button>
@@ -1190,7 +1251,7 @@ export default function ProductRegistrationApp() {
                       />
                       <Button
                         onClick={addNewLocation}
-                        disabled={!newLocationName.trim()}
+                        disabled={!newLocationName.trim() || connectionStatus !== "connected"}
                         className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                       >
                         Toevoegen
@@ -1213,6 +1274,7 @@ export default function ProductRegistrationApp() {
                             if (file) handleFileImport(file, "locations")
                           }}
                           className="h-12"
+                          disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           Ondersteunde formaten: CSV, TXT (één locatie per regel)
@@ -1245,6 +1307,7 @@ export default function ProductRegistrationApp() {
                           variant="outline"
                           onClick={() => removeLocation(loc)}
                           className="text-red-600 hover:text-red-700"
+                          disabled={connectionStatus !== "connected"}
                         >
                           🗑️
                         </Button>
@@ -1277,7 +1340,7 @@ export default function ProductRegistrationApp() {
                       />
                       <Button
                         onClick={addNewPurpose}
-                        disabled={!newPurposeName.trim()}
+                        disabled={!newPurposeName.trim() || connectionStatus !== "connected"}
                         className="bg-amber-600 hover:bg-amber-700 h-12 px-6"
                       >
                         Toevoegen
@@ -1300,6 +1363,7 @@ export default function ProductRegistrationApp() {
                             if (file) handleFileImport(file, "purposes")
                           }}
                           className="h-12"
+                          disabled={connectionStatus !== "connected"}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           Ondersteunde formaten: CSV, TXT (één doel per regel)
@@ -1335,6 +1399,7 @@ export default function ProductRegistrationApp() {
                           variant="outline"
                           onClick={() => removePurpose(purposeItem)}
                           className="text-red-600 hover:text-red-700"
+                          disabled={connectionStatus !== "connected"}
                         >
                           🗑️
                         </Button>
