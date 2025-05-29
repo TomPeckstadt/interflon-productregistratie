@@ -99,9 +99,19 @@ export default function ProductRegistrationApp() {
     }
   }, [cameraStream])
 
+  // Voeg een betere foutafhandeling toe aan de loadAllData functie:
+
   const loadAllData = async () => {
     try {
       setConnectionStatus("connecting")
+
+      // Controleer eerst of de omgevingsvariabelen beschikbaar zijn
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.error("Supabase omgevingsvariabelen ontbreken")
+        setConnectionStatus("error")
+        setImportError("❌ Fout bij verbinden met database: Configuratie ontbreekt")
+        return
+      }
 
       // Laad alle data parallel
       const [usersResult, productsResult, locationsResult, purposesResult, registrationsResult] = await Promise.all([
@@ -130,25 +140,56 @@ export default function ProductRegistrationApp() {
     } catch (error) {
       console.error("Error loading data:", error)
       setConnectionStatus("error")
-      setImportError("❌ Fout bij verbinden met database")
+      setImportError(`❌ Fout bij verbinden met database: ${error instanceof Error ? error.message : "Onbekende fout"}`)
     }
   }
 
+  // Wijzig de setupRealtimeSubscriptions functie om betere foutafhandeling toe te voegen
   const setupRealtimeSubscriptions = () => {
-    // Setup realtime subscriptions voor automatische sync
-    const unsubscribeProducts = subscribeToProducts(setProducts)
-    const unsubscribeUsers = subscribeToUsers(setUsers)
-    const unsubscribeLocations = subscribeToLocations(setLocations)
-    const unsubscribePurposes = subscribeToPurposes(setPurposes)
-    const unsubscribeRegistrations = subscribeToRegistrations(setEntries)
+    console.log("Setting up realtime subscriptions...")
 
-    // Cleanup functie
-    return () => {
-      unsubscribeProducts?.unsubscribe()
-      unsubscribeUsers?.unsubscribe()
-      unsubscribeLocations?.unsubscribe()
-      unsubscribePurposes?.unsubscribe()
-      unsubscribeRegistrations?.unsubscribe()
+    try {
+      // Setup realtime subscriptions voor automatische sync
+      const unsubscribeProducts = subscribeToProducts((updatedProducts) => {
+        console.log("Products subscription update received:", updatedProducts.length)
+        setProducts(updatedProducts)
+      })
+
+      const unsubscribeUsers = subscribeToUsers((updatedUsers) => {
+        console.log("Users subscription update received:", updatedUsers.length)
+        setUsers(updatedUsers)
+      })
+
+      const unsubscribeLocations = subscribeToLocations((updatedLocations) => {
+        console.log("Locations subscription update received:", updatedLocations.length)
+        setLocations(updatedLocations)
+      })
+
+      const unsubscribePurposes = subscribeToPurposes((updatedPurposes) => {
+        console.log("Purposes subscription update received:", updatedPurposes.length)
+        setPurposes(updatedPurposes)
+      })
+
+      const unsubscribeRegistrations = subscribeToRegistrations((updatedRegistrations) => {
+        console.log("Registrations subscription update received:", updatedRegistrations.length)
+        setEntries(updatedRegistrations)
+      })
+
+      console.log("All realtime subscriptions set up successfully")
+
+      // Cleanup functie
+      return () => {
+        console.log("Cleaning up subscriptions...")
+        if (unsubscribeProducts) unsubscribeProducts.unsubscribe()
+        if (unsubscribeUsers) unsubscribeUsers.unsubscribe()
+        if (unsubscribeLocations) unsubscribeLocations.unsubscribe()
+        if (unsubscribePurposes) unsubscribePurposes.unsubscribe()
+        if (unsubscribeRegistrations) unsubscribeRegistrations.unsubscribe()
+      }
+    } catch (error) {
+      console.error("Error setting up realtime subscriptions:", error)
+      setImportError("Fout bij het opzetten van realtime updates. Vernieuw de pagina om het opnieuw te proberen.")
+      return () => {}
     }
   }
 
@@ -445,16 +486,32 @@ export default function ProductRegistrationApp() {
     document.body.removeChild(link)
   }
 
-  // Voeg nieuwe gebruiker toe
+  // Wijzig de addNewUser functie om direct de gebruiker toe te voegen aan de lijst als fallback
   const addNewUser = async () => {
     if (newUserName.trim() && !users.includes(newUserName.trim())) {
       try {
-        await saveUser(newUserName.trim())
-        setNewUserName("")
-        setImportMessage("✅ Gebruiker toegevoegd!")
-        setTimeout(() => setImportMessage(""), 2000)
+        console.log("addNewUser functie aangeroepen voor:", newUserName.trim())
+        const result = await saveUser(newUserName.trim())
+
+        if (result.error) {
+          console.error("Fout bij toevoegen gebruiker:", result.error)
+          setImportError(`Fout bij toevoegen gebruiker: ${result.error.message || "Onbekende fout"}`)
+          setTimeout(() => setImportError(""), 5000)
+        } else {
+          // Direct de gebruiker toevoegen aan de lijst als fallback voor realtime updates
+          if (result.data) {
+            console.log("Gebruiker direct toevoegen aan lijst:", result.data)
+            setUsers((prevUsers) => [...prevUsers, newUserName.trim()])
+          }
+
+          setNewUserName("")
+          setImportMessage("✅ Gebruiker toegevoegd!")
+          setTimeout(() => setImportMessage(""), 2000)
+        }
       } catch (error) {
-        setImportError("Fout bij toevoegen gebruiker")
+        console.error("Onverwachte fout bij toevoegen gebruiker:", error)
+        setImportError(`Onverwachte fout: ${error instanceof Error ? error.message : "Onbekende fout"}`)
+        setTimeout(() => setImportError(""), 5000)
       }
     }
   }
@@ -508,45 +565,98 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Verwijder item
+  // Wijzig de removeUser functie om direct de gebruiker te verwijderen uit de lijst als fallback
   const removeUser = async (userToRemove: string) => {
     try {
-      await deleteUser(userToRemove)
-      setImportMessage("✅ Gebruiker verwijderd!")
-      setTimeout(() => setImportMessage(""), 2000)
-    } catch (error) {
-      setImportError("Fout bij verwijderen gebruiker")
-    }
-  }
+      console.log("removeUser functie aangeroepen voor:", userToRemove)
+      const result = await deleteUser(userToRemove)
 
-  const removeProduct = async (productToRemove: Product) => {
-    try {
-      if (productToRemove.id) {
-        await deleteProduct(productToRemove.id)
-        setImportMessage("✅ Product verwijderd!")
+      if (result.error) {
+        console.error("Fout bij verwijderen gebruiker:", result.error)
+        setImportError(`Fout bij verwijderen gebruiker: ${result.error.message || "Onbekende fout"}`)
+        setTimeout(() => setImportError(""), 5000)
+      } else {
+        // Direct de gebruiker verwijderen uit de lijst als fallback voor realtime updates
+        console.log("Gebruiker direct verwijderen uit lijst:", userToRemove)
+        setUsers((prevUsers) => prevUsers.filter((u) => u !== userToRemove))
+
+        setImportMessage("✅ Gebruiker verwijderd!")
         setTimeout(() => setImportMessage(""), 2000)
       }
     } catch (error) {
+      console.error("Onverwachte fout bij verwijderen gebruiker:", error)
+      setImportError(`Onverwachte fout: ${error instanceof Error ? error.message : "Onbekende fout"}`)
+      setTimeout(() => setImportError(""), 5000)
+    }
+  }
+
+  // Wijzig de removeProduct functie om direct het product te verwijderen uit de lijst als fallback
+  const removeProduct = async (productToRemove: Product) => {
+    try {
+      if (productToRemove.id) {
+        console.log("removeProduct aangeroepen voor:", productToRemove)
+        const result = await deleteProduct(productToRemove.id)
+
+        if (result.error) {
+          console.error("Fout bij verwijderen product:", result.error)
+          setImportError(`Fout bij verwijderen product: ${result.error.message || "Onbekende fout"}`)
+        } else {
+          // Direct het product verwijderen uit de lijst als fallback voor realtime updates
+          console.log("Product direct verwijderen uit lijst:", productToRemove.id)
+          setProducts((prevProducts) => prevProducts.filter((p) => p.id !== productToRemove.id))
+
+          setImportMessage("✅ Product verwijderd!")
+          setTimeout(() => setImportMessage(""), 2000)
+        }
+      }
+    } catch (error) {
+      console.error("Onverwachte fout bij verwijderen product:", error)
       setImportError("Fout bij verwijderen product")
     }
   }
 
   const removeLocation = async (locationToRemove: string) => {
+    // Wijzig de removeLocation functie om direct de locatie te verwijderen uit de lijst als fallback
     try {
-      await deleteLocation(locationToRemove)
-      setImportMessage("✅ Locatie verwijderd!")
-      setTimeout(() => setImportMessage(""), 2000)
+      console.log("removeLocation aangeroepen voor:", locationToRemove)
+      const result = await deleteLocation(locationToRemove)
+
+      if (result.error) {
+        console.error("Fout bij verwijderen locatie:", result.error)
+        setImportError(`Fout bij verwijderen locatie: ${result.error.message || "Onbekende fout"}`)
+      } else {
+        // Direct de locatie verwijderen uit de lijst als fallback voor realtime updates
+        console.log("Locatie direct verwijderen uit lijst:", locationToRemove)
+        setLocations((prevLocations) => prevLocations.filter((l) => l !== locationToRemove))
+
+        setImportMessage("✅ Locatie verwijderd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
     } catch (error) {
+      console.error("Fout bij verwijderen locatie:", error)
       setImportError("Fout bij verwijderen locatie")
     }
   }
 
   const removePurpose = async (purposeToRemove: string) => {
+    // Wijzig de removePurpose functie om direct het doel te verwijderen uit de lijst als fallback
     try {
-      await deletePurpose(purposeToRemove)
-      setImportMessage("✅ Doel verwijderd!")
-      setTimeout(() => setImportMessage(""), 2000)
+      console.log("removePurpose aangeroepen voor:", purposeToRemove)
+      const result = await deletePurpose(purposeToRemove)
+
+      if (result.error) {
+        console.error("Fout bij verwijderen doel:", result.error)
+        setImportError(`Fout bij verwijderen doel: ${result.error.message || "Onbekende fout"}`)
+      } else {
+        // Direct het doel verwijderen uit de lijst als fallback voor realtime updates
+        console.log("Doel direct verwijderen uit lijst:", purposeToRemove)
+        setPurposes((prevPurposes) => prevPurposes.filter((p) => p !== purposeToRemove))
+
+        setImportMessage("✅ Doel verwijderd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
     } catch (error) {
+      console.error("Fout bij verwijderen doel:", error)
       setImportError("Fout bij verwijderen doel")
     }
   }
@@ -855,7 +965,8 @@ export default function ProductRegistrationApp() {
                     <CardTitle className="flex items-center gap-2 text-xl">📋 Registratie Geschiedenis</CardTitle>
                     <CardDescription>
                       Overzicht van alle geregistreerde producten ({getFilteredAndSortedEntries().length} van{" "}
-                      {entries.length} items)
+                      {entries.length} producten ({getFilteredAndSortedEntries().length} van {entries.length}
+                      items)
                     </CardDescription>
                   </div>
                   {entries.length > 0 && (
