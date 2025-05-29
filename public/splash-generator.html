@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dematic Splash Screen Generator</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    canvas { border: 1px solid #ccc; margin: 10px 0; max-width: 100%; }
+    .controls { margin-bottom: 20px; }
+    button { padding: 10px; background: #f59e0b; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Dematic Splash Screen Generator</h1>
+  <div class="controls">
+    <button id="generate">Generate Splash Screen</button>
+  </div>
+  <div id="canvases"></div>
+
+  <script>
+    document.getElementById('generate').addEventListener('click', generateSplashScreen);
+
+    function generateSplashScreen() {
+      const canvasesDiv = document.getElementById('canvases');
+      canvasesDiv.innerHTML = '';
+      
+      // iPad dimensions
+      const width = 2048;
+      const height = 2732;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvasesDiv.appendChild(canvas);
+      
+      const ctx = canvas.getContext('2d');
+      
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Amber accent at top
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(0, 0, width, height * 0.15);
+      
+      // Logo placeholder (would be better with actual logo)
+      const logoSize = width * 0.4;
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(width / 2, height * 0.4, logoSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // White D in the center
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${logoSize * 0.6}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('D', width / 2, height * 0.4);
+      
+      // App name
+      ctx.fillStyle = '#1f2937';
+      ctx.font = `bold ${width * 0.05}px sans-serif`;
+      ctx.fillText('Dematic', width / 2, height * 0.6);
+      
+      ctx.font = `${width * 0.04}px sans-serif`;
+      ctx.fillText('Product Registratie', width / 2, height * 0.65);
+      
+      // Download link
+      const link = document.createElement('a');
+      link.download = 'splash-screen.png';
+      link.href = canvas.toDataURL('image/png');
+      link.textContent = 'Download Splash Screen';
+      link.style.display = 'block';
+      link.style.margin = '10px 0';
+      canvasesDiv.appendChild(link);
+    }
+  </script>
+</body>
+</html>
