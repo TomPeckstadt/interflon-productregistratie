@@ -50,6 +50,16 @@ export default function ProductRegistrationApp() {
   const [newLocationName, setNewLocationName] = useState("")
   const [newPurposeName, setNewPurposeName] = useState("")
 
+  // Filter en zoek states
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterUser, setFilterUser] = useState("all")
+  const [filterProduct, setFilterProduct] = useState("")
+  const [filterLocation, setFilterLocation] = useState("all")
+  const [filterDateFrom, setFilterDateFrom] = useState("")
+  const [filterDateTo, setFilterDateTo] = useState("")
+  const [sortBy, setSortBy] = useState<"date" | "user" | "product">("date")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
   // Laad opgeslagen gegevens bij start
   useEffect(() => {
     loadData()
@@ -123,10 +133,11 @@ export default function ProductRegistrationApp() {
 
   // Export naar CSV
   const exportToCSV = () => {
+    const filteredEntries = getFilteredAndSortedEntries()
     const headers = ["Datum", "Tijd", "Gebruiker", "Product", "Locatie", "Doel"]
     const csvContent = [
       headers.join(","),
-      ...entries.map((entry) =>
+      ...filteredEntries.map((entry) =>
         [
           entry.date,
           entry.time,
@@ -142,7 +153,11 @@ export default function ProductRegistrationApp() {
     const link = document.createElement("a")
     const url = URL.createObjectURL(blob)
     link.setAttribute("href", url)
-    link.setAttribute("download", `product-registraties-${new Date().toISOString().split("T")[0]}.csv`)
+
+    const filterSuffix =
+      searchQuery || filterUser !== "all" || filterProduct || filterLocation !== "all" ? "-gefilterd" : ""
+    link.setAttribute("download", `product-registraties${filterSuffix}-${new Date().toISOString().split("T")[0]}.csv`)
+
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -212,6 +227,69 @@ export default function ProductRegistrationApp() {
     const updatedPurposes = purposes.filter((p) => p !== purposeToRemove)
     setPurposes(updatedPurposes)
     localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
+  }
+
+  // Filter en zoek functies
+  const getFilteredAndSortedEntries = () => {
+    const filtered = entries.filter((entry) => {
+      const searchMatch =
+        !searchQuery ||
+        entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const userMatch = !filterUser || filterUser === "all" || entry.user === filterUser
+      const productMatch = !filterProduct || entry.product.toLowerCase().includes(filterProduct.toLowerCase())
+      const locationMatch = !filterLocation || filterLocation === "all" || entry.location === filterLocation
+
+      let dateMatch = true
+      if (filterDateFrom || filterDateTo) {
+        const entryDate = new Date(entry.timestamp)
+        if (filterDateFrom) {
+          const fromDate = new Date(filterDateFrom)
+          dateMatch = dateMatch && entryDate >= fromDate
+        }
+        if (filterDateTo) {
+          const toDate = new Date(filterDateTo + "T23:59:59")
+          dateMatch = dateMatch && entryDate <= toDate
+        }
+      }
+
+      return searchMatch && userMatch && productMatch && locationMatch && dateMatch
+    })
+
+    filtered.sort((a, b) => {
+      let comparison = 0
+
+      switch (sortBy) {
+        case "date":
+          comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          break
+        case "user":
+          comparison = a.user.localeCompare(b.user)
+          break
+        case "product":
+          comparison = a.product.localeCompare(b.product)
+          break
+      }
+
+      return sortOrder === "asc" ? comparison : -comparison
+    })
+
+    return filtered
+  }
+
+  // Wis alle filters
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setFilterUser("all")
+    setFilterProduct("")
+    setFilterLocation("all")
+    setFilterDateFrom("")
+    setFilterDateTo("")
+    setSortBy("date")
+    setSortOrder("desc")
   }
 
   return (
@@ -340,7 +418,8 @@ export default function ProductRegistrationApp() {
                   <div>
                     <CardTitle>📋 Registratie Geschiedenis</CardTitle>
                     <CardDescription>
-                      Overzicht van alle geregistreerde producten ({entries.length} items)
+                      Overzicht van alle geregistreerde producten ({getFilteredAndSortedEntries().length} van{" "}
+                      {entries.length} items)
                     </CardDescription>
                   </div>
                   {entries.length > 0 && (
@@ -351,13 +430,127 @@ export default function ProductRegistrationApp() {
                 </div>
               </CardHeader>
               <CardContent>
-                {entries.length === 0 ? (
+                {/* Zoek en Filter Sectie */}
+                <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900">🔍 Zoeken & Filteren</h3>
+                    <Button onClick={clearAllFilters} variant="outline" size="sm">
+                      🗑️ Wis filters
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="search">Zoeken</Label>
+                    <Input
+                      id="search"
+                      placeholder="Zoek in alle velden..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label>👤 Gebruiker</Label>
+                      <Select value={filterUser} onValueChange={setFilterUser}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Alle gebruikers" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle gebruikers</SelectItem>
+                          {users.map((user) => (
+                            <SelectItem key={user} value={user}>
+                              {user}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>📦 Product</Label>
+                      <Input
+                        placeholder="Zoek product..."
+                        value={filterProduct}
+                        onChange={(e) => setFilterProduct(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>📍 Locatie</Label>
+                      <Select value={filterLocation} onValueChange={setFilterLocation}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Alle locaties" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle locaties</SelectItem>
+                          {locations.map((location) => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>📊 Sorteren</Label>
+                      <div className="flex gap-2">
+                        <Select value={sortBy} onValueChange={(value: "date" | "user" | "product") => setSortBy(value)}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="date">Datum</SelectItem>
+                            <SelectItem value="user">Gebruiker</SelectItem>
+                            <SelectItem value="product">Product</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                          className="px-3"
+                        >
+                          {sortOrder === "asc" ? "⬆️" : "⬇️"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dateFrom">📅 Van datum</Label>
+                      <Input
+                        id="dateFrom"
+                        type="date"
+                        value={filterDateFrom}
+                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dateTo">📅 Tot datum</Label>
+                      <Input
+                        id="dateTo"
+                        type="date"
+                        value={filterDateTo}
+                        onChange={(e) => setFilterDateTo(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resultaten */}
+                {getFilteredAndSortedEntries().length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    Nog geen registraties. Begin met het registreren van een product!
+                    {entries.length === 0
+                      ? "Nog geen registraties. Begin met het registreren van een product!"
+                      : "Geen resultaten gevonden voor de huidige filters."}
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {entries.map((entry) => (
+                    {getFilteredAndSortedEntries().map((entry) => (
                       <div
                         key={entry.id}
                         className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
