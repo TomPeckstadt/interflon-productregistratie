@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import Image from "next/image"
 
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
@@ -301,16 +300,12 @@ export default function ProductRegistrationApp() {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Logo en titel sectie */}
             <div className="flex flex-col lg:flex-row items-center gap-6">
-              {/* DEMATIC Logo */}
+              {/* DEMATIC Logo - vervang de Image component met deze div */}
               <div className="flex-shrink-0">
-                <Image
-                  src="/images/dematic-logo.png"
-                  alt="DEMATIC Logo"
-                  width={200}
-                  height={80}
-                  className="h-16 lg:h-20 w-auto"
-                  priority
-                />
+                <div className="flex items-center bg-white p-4 rounded-lg shadow-sm border">
+                  <div className="w-1 h-12 bg-amber-500 mr-4"></div>
+                  <div className="text-2xl font-bold text-gray-800 tracking-wide">DEMATIC</div>
+                </div>
               </div>
 
               {/* Divider lijn */}
@@ -846,14 +841,12 @@ export default function ProductRegistrationApp() {
       <footer className="mt-12 border-t border-gray-200 bg-white py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
+            {/* Footer logo - vervang de Image component */}
             <div className="flex items-center mb-4 md:mb-0">
-              <Image
-                src="/images/dematic-logo.png"
-                alt="DEMATIC Logo"
-                width={120}
-                height={48}
-                className="h-8 w-auto mr-4"
-              />
+              <div className="flex items-center mr-4">
+                <div className="w-1 h-6 bg-amber-500 mr-2"></div>
+                <div className="text-lg font-bold text-gray-700">DEMATIC</div>
+              </div>
               <p className="text-sm text-gray-600">© {new Date().getFullYear()} DEMATIC. Alle rechten voorbehouden.</p>
             </div>
             <div className="flex items-center gap-6">
