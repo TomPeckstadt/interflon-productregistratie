@@ -10,28 +10,21 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  User,
-  Package,
-  MapPin,
-  Save,
-  History,
-  CheckCircle,
-  Download,
-  UserPlus,
-  Trash2,
-  Target,
-  QrCode,
-} from "lucide-react"
+import { User, Package, MapPin, Save, History, CheckCircle, Download, UserPlus, Trash2, Target } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { QRScanner } from "@/components/qr-scanner"
-import { PhotoUpload } from "@/components/photo-upload"
-import { StatisticsDashboard } from "@/components/statistics-dashboard"
-import { ExcelImporter } from "@/components/excel-importer"
-import { InstallPrompt } from "@/components/install-prompt"
-import { OfflineDetector } from "@/components/offline-detector"
-import { PWARegister } from "@/app/pwa-register"
-import { saveRegistration, getRegistrations, type RegistrationEntry } from "@/lib/firebase"
+import {
+  saveRegistration,
+  getRegistrations,
+  saveUsers,
+  getUsers,
+  saveProducts,
+  getProducts,
+  saveLocations,
+  getLocations,
+  savePurposes,
+  getPurposes,
+  type RegistrationEntry,
+} from "@/lib/firebase-clean"
 
 // Standaard gegevens
 const DEFAULT_USERS = ["Jan Janssen", "Marie Pietersen", "Piet de Vries", "Anna van der Berg"]
@@ -47,11 +40,6 @@ export default function ProductRegistrationApp() {
   const [entries, setEntries] = useState<RegistrationEntry[]>([])
   const [showSuccess, setShowSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
-  // Nieuwe functies states
-  const [showQRScanner, setShowQRScanner] = useState(false)
-  const [currentPhoto, setCurrentPhoto] = useState<string>("")
-  const [scannedQR, setScannedQR] = useState<string>("")
 
   // Beheer states
   const [users, setUsers] = useState<string[]>(DEFAULT_USERS)
@@ -83,49 +71,110 @@ export default function ProductRegistrationApp() {
   const loadData = async () => {
     setIsLoading(true)
 
-    // Probeer eerst Firebase
+    // Laad registraties
     try {
       const { data: firebaseData, error } = await getRegistrations()
 
       if (!error && firebaseData && firebaseData.length > 0) {
-        // Firebase data beschikbaar
         setEntries(firebaseData)
+        console.log("✅ Loaded registrations from Firebase")
       } else {
-        // Geen Firebase data, gebruik localStorage
-        console.log("No Firebase data found, using localStorage")
+        console.log("No Firebase registrations found, using localStorage")
         const savedEntries = localStorage.getItem("productRegistrations")
         if (savedEntries) {
           setEntries(JSON.parse(savedEntries))
         }
       }
     } catch (error) {
-      console.log("Firebase not available, using localStorage")
-      // Fallback naar localStorage
+      console.log("Firebase not available for registrations, using localStorage")
       const savedEntries = localStorage.getItem("productRegistrations")
       if (savedEntries) {
         setEntries(JSON.parse(savedEntries))
       }
     }
 
-    // Laad andere opgeslagen gegevens
-    const savedUsers = localStorage.getItem("customUsers")
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers))
+    // Laad gebruikers
+    try {
+      const { data: usersData, error } = await getUsers()
+      if (!error && usersData && usersData.length > 0) {
+        setUsers(usersData)
+        console.log("✅ Loaded users from Firebase")
+      } else {
+        console.log("No Firebase users found, using localStorage")
+        const savedUsers = localStorage.getItem("customUsers")
+        if (savedUsers) {
+          setUsers(JSON.parse(savedUsers))
+        }
+      }
+    } catch (error) {
+      console.log("Firebase not available for users, using localStorage")
+      const savedUsers = localStorage.getItem("customUsers")
+      if (savedUsers) {
+        setUsers(JSON.parse(savedUsers))
+      }
     }
 
-    const savedProducts = localStorage.getItem("customProducts")
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts))
+    // Laad producten
+    try {
+      const { data: productsData, error } = await getProducts()
+      if (!error && productsData && productsData.length > 0) {
+        setProducts(productsData)
+        console.log("✅ Loaded products from Firebase")
+      } else {
+        console.log("No Firebase products found, using localStorage")
+        const savedProducts = localStorage.getItem("customProducts")
+        if (savedProducts) {
+          setProducts(JSON.parse(savedProducts))
+        }
+      }
+    } catch (error) {
+      console.log("Firebase not available for products, using localStorage")
+      const savedProducts = localStorage.getItem("customProducts")
+      if (savedProducts) {
+        setProducts(JSON.parse(savedProducts))
+      }
     }
 
-    const savedLocations = localStorage.getItem("customLocations")
-    if (savedLocations) {
-      setLocations(JSON.parse(savedLocations))
+    // Laad locaties
+    try {
+      const { data: locationsData, error } = await getLocations()
+      if (!error && locationsData && locationsData.length > 0) {
+        setLocations(locationsData)
+        console.log("✅ Loaded locations from Firebase")
+      } else {
+        console.log("No Firebase locations found, using localStorage")
+        const savedLocations = localStorage.getItem("customLocations")
+        if (savedLocations) {
+          setLocations(JSON.parse(savedLocations))
+        }
+      }
+    } catch (error) {
+      console.log("Firebase not available for locations, using localStorage")
+      const savedLocations = localStorage.getItem("customLocations")
+      if (savedLocations) {
+        setLocations(JSON.parse(savedLocations))
+      }
     }
 
-    const savedPurposes = localStorage.getItem("customPurposes")
-    if (savedPurposes) {
-      setPurposes(JSON.parse(savedPurposes))
+    // Laad doelen
+    try {
+      const { data: purposesData, error } = await getPurposes()
+      if (!error && purposesData && purposesData.length > 0) {
+        setPurposes(purposesData)
+        console.log("✅ Loaded purposes from Firebase")
+      } else {
+        console.log("No Firebase purposes found, using localStorage")
+        const savedPurposes = localStorage.getItem("customPurposes")
+        if (savedPurposes) {
+          setPurposes(JSON.parse(savedPurposes))
+        }
+      }
+    } catch (error) {
+      console.log("Firebase not available for purposes, using localStorage")
+      const savedPurposes = localStorage.getItem("customPurposes")
+      if (savedPurposes) {
+        setPurposes(JSON.parse(savedPurposes))
+      }
     }
 
     setIsLoading(false)
@@ -133,16 +182,14 @@ export default function ProductRegistrationApp() {
 
   // Sla gegevens op
   const saveToStorage = async (newEntry: Omit<RegistrationEntry, "id" | "created_at">) => {
-    // Probeer eerst Firebase
     try {
       const { data: firebaseData, error } = await saveRegistration(newEntry)
 
       if (!error && firebaseData) {
-        // Firebase succesvol
         const updatedEntries = [firebaseData, ...entries]
         setEntries(updatedEntries)
-        // Sla ook op in localStorage als backup
         localStorage.setItem("productRegistrations", JSON.stringify(updatedEntries))
+        console.log("✅ Registration saved to Firebase")
         return
       }
     } catch (error) {
@@ -178,8 +225,8 @@ export default function ProductRegistrationApp() {
       timestamp: now.toISOString(),
       date: now.toLocaleDateString("nl-NL"),
       time: now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }),
-      photo_url: currentPhoto,
-      qr_code: scannedQR,
+      photo_url: "",
+      qr_code: "",
     }
 
     await saveToStorage(newEntry)
@@ -188,8 +235,6 @@ export default function ProductRegistrationApp() {
     setSelectedProduct("")
     setLocation("")
     setPurpose("")
-    setCurrentPhoto("")
-    setScannedQR("")
 
     // Toon success bericht
     setShowSuccess(true)
@@ -197,29 +242,10 @@ export default function ProductRegistrationApp() {
     setIsLoading(false)
   }
 
-  // QR Code handler
-  const handleQRScan = (result: string) => {
-    setScannedQR(result)
-    setShowQRScanner(false)
-
-    // Probeer product info uit QR code te halen
-    try {
-      const qrData = JSON.parse(result)
-      if (qrData.product) setSelectedProduct(qrData.product)
-      if (qrData.location) setLocation(qrData.location)
-      if (qrData.purpose) setPurpose(qrData.purpose)
-    } catch {
-      // Als het geen JSON is, gebruik als product naam
-      if (products.includes(result)) {
-        setSelectedProduct(result)
-      }
-    }
-  }
-
-  // Export naar CSV (gefilterde data)
+  // Export naar CSV
   const exportToCSV = () => {
     const filteredEntries = getFilteredAndSortedEntries()
-    const headers = ["Datum", "Tijd", "Gebruiker", "Product", "Locatie", "Doel", "QR Code", "Foto"]
+    const headers = ["Datum", "Tijd", "Gebruiker", "Product", "Locatie", "Doel"]
     const csvContent = [
       headers.join(","),
       ...filteredEntries.map((entry) =>
@@ -230,8 +256,6 @@ export default function ProductRegistrationApp() {
           `"${entry.product}"`,
           `"${entry.location}"`,
           `"${entry.purpose}"`,
-          `"${entry.qr_code || ""}"`,
-          `"${entry.photo_url || ""}"`,
         ].join(","),
       ),
     ].join("\n")
@@ -251,113 +275,144 @@ export default function ProductRegistrationApp() {
   }
 
   // Voeg nieuwe gebruiker toe
-  const addNewUser = () => {
+  const addNewUser = async () => {
     if (newUserName.trim() && !users.includes(newUserName.trim())) {
       const updatedUsers = [...users, newUserName.trim()]
       setUsers(updatedUsers)
+
+      try {
+        await saveUsers(updatedUsers)
+        console.log("✅ Users saved to Firebase")
+      } catch (error) {
+        console.error("Error saving users to Firebase:", error)
+      }
+
       localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
       setNewUserName("")
     }
   }
 
   // Voeg nieuw product toe
-  const addNewProduct = () => {
+  const addNewProduct = async () => {
     if (newProductName.trim() && !products.includes(newProductName.trim())) {
       const updatedProducts = [...products, newProductName.trim()]
       setProducts(updatedProducts)
+
+      try {
+        await saveProducts(updatedProducts)
+        console.log("✅ Products saved to Firebase")
+      } catch (error) {
+        console.error("Error saving products to Firebase:", error)
+      }
+
       localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
       setNewProductName("")
     }
   }
 
   // Voeg nieuwe locatie toe
-  const addNewLocation = () => {
+  const addNewLocation = async () => {
     if (newLocationName.trim() && !locations.includes(newLocationName.trim())) {
       const updatedLocations = [...locations, newLocationName.trim()]
       setLocations(updatedLocations)
+
+      try {
+        await saveLocations(updatedLocations)
+        console.log("✅ Locations saved to Firebase")
+      } catch (error) {
+        console.error("Error saving locations to Firebase:", error)
+      }
+
       localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
       setNewLocationName("")
     }
   }
 
   // Voeg nieuw doel toe
-  const addNewPurpose = () => {
+  const addNewPurpose = async () => {
     if (newPurposeName.trim() && !purposes.includes(newPurposeName.trim())) {
       const updatedPurposes = [...purposes, newPurposeName.trim()]
       setPurposes(updatedPurposes)
+
+      try {
+        await savePurposes(updatedPurposes)
+        console.log("✅ Purposes saved to Firebase")
+      } catch (error) {
+        console.error("Error saving purposes to Firebase:", error)
+      }
+
       localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
       setNewPurposeName("")
     }
   }
 
-  // Import functies
-  const handleUsersImport = (newUsers: string[]) => {
-    const updatedUsers = [...users, ...newUsers]
-    setUsers(updatedUsers)
-    localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
-  }
-
-  const handleProductsImport = (newProducts: string[]) => {
-    const updatedProducts = [...products, ...newProducts]
-    setProducts(updatedProducts)
-    localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
-  }
-
-  const handleLocationsImport = (newLocations: string[]) => {
-    const updatedLocations = [...locations, ...newLocations]
-    setLocations(updatedLocations)
-    localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
-  }
-
-  const handlePurposesImport = (newPurposes: string[]) => {
-    const updatedPurposes = [...purposes, ...newPurposes]
-    setPurposes(updatedPurposes)
-    localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
-  }
-
   // Verwijder item
-  const removeUser = (userToRemove: string) => {
+  const removeUser = async (userToRemove: string) => {
     const updatedUsers = users.filter((user) => user !== userToRemove)
     setUsers(updatedUsers)
+
+    try {
+      await saveUsers(updatedUsers)
+    } catch (error) {
+      console.error("Error saving users to Firebase after removal:", error)
+    }
+
     localStorage.setItem("customUsers", JSON.stringify(updatedUsers))
   }
 
-  const removeProduct = (productToRemove: string) => {
+  const removeProduct = async (productToRemove: string) => {
     const updatedProducts = products.filter((product) => product !== productToRemove)
     setProducts(updatedProducts)
+
+    try {
+      await saveProducts(updatedProducts)
+    } catch (error) {
+      console.error("Error saving products to Firebase after removal:", error)
+    }
+
     localStorage.setItem("customProducts", JSON.stringify(updatedProducts))
   }
 
-  const removeLocation = (locationToRemove: string) => {
+  const removeLocation = async (locationToRemove: string) => {
     const updatedLocations = locations.filter((loc) => loc !== locationToRemove)
     setLocations(updatedLocations)
+
+    try {
+      await saveLocations(updatedLocations)
+    } catch (error) {
+      console.error("Error saving locations to Firebase after removal:", error)
+    }
+
     localStorage.setItem("customLocations", JSON.stringify(updatedLocations))
   }
 
-  const removePurpose = (purposeToRemove: string) => {
+  const removePurpose = async (purposeToRemove: string) => {
     const updatedPurposes = purposes.filter((p) => p !== purposeToRemove)
     setPurposes(updatedPurposes)
+
+    try {
+      await savePurposes(updatedPurposes)
+    } catch (error) {
+      console.error("Error saving purposes to Firebase after removal:", error)
+    }
+
     localStorage.setItem("customPurposes", JSON.stringify(updatedPurposes))
   }
 
   // Filter en zoek functies
   const getFilteredAndSortedEntries = () => {
     const filtered = entries.filter((entry) => {
-      // Zoek in alle velden
       const searchMatch =
         !searchQuery ||
         entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
         entry.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (entry.qr_code && entry.qr_code.toLowerCase().includes(searchQuery.toLowerCase()))
+        entry.purpose.toLowerCase().includes(searchQuery.toLowerCase())
 
-      // Filter op specifieke velden
       const userMatch = !filterUser || filterUser === "all" || entry.user === filterUser
       const productMatch = !filterProduct || entry.product.toLowerCase().includes(filterProduct.toLowerCase())
       const locationMatch = !filterLocation || filterLocation === "all" || entry.location === filterLocation
 
-      // Datum filter
       let dateMatch = true
       if (filterDateFrom || filterDateTo) {
         const entryDate = new Date(entry.timestamp)
@@ -374,7 +429,6 @@ export default function ProductRegistrationApp() {
       return searchMatch && userMatch && productMatch && locationMatch && dateMatch
     })
 
-    // Sorteren
     filtered.sort((a, b) => {
       let comparison = 0
 
@@ -421,679 +475,5 @@ export default function ProductRegistrationApp() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PWARegister />
-      <InstallPrompt />
-      <OfflineDetector />
-
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src="/dematic-logo.png" alt="Interflon Logo" className="h-20 w-auto" />
-              <div className="border-l border-gray-300 pl-4">
-                <h1 className="text-2xl font-bold text-gray-900">Product Registratie</h1>
-                <p className="text-sm text-gray-600">Registreer product gebruik en locatie</p>
-              </div>
-            </div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <span>Powered by Interflon</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-4">
-        {showSuccess && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">Product succesvol geregistreerd!</AlertDescription>
-          </Alert>
-        )}
-
-        <Tabs defaultValue="register" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-white border border-gray-200">
-            <TabsTrigger value="register">Registreren</TabsTrigger>
-            <TabsTrigger value="history">Geschiedenis</TabsTrigger>
-            <TabsTrigger value="statistics">Statistieken</TabsTrigger>
-            <TabsTrigger value="users">Gebruikers</TabsTrigger>
-            <TabsTrigger value="products">Producten</TabsTrigger>
-            <TabsTrigger value="locations">Locaties</TabsTrigger>
-            <TabsTrigger value="purposes">Doelen</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="register">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-amber-500" />
-                    Nieuw Product Registreren
-                  </CardTitle>
-                  <CardDescription>Vul onderstaande gegevens in om een product te registreren</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* QR Scanner en Foto Upload knoppen */}
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" onClick={() => setShowQRScanner(true)} className="flex-1">
-                        <QrCode className="h-4 w-4 mr-2" />
-                        QR Scannen
-                      </Button>
-                    </div>
-
-                    {scannedQR && (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-800">
-                          <strong>QR Code gescand:</strong> {scannedQR}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Gebruiker */}
-                    <div className="space-y-2">
-                      <Label htmlFor="user" className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-amber-500" />
-                        Gebruiker
-                      </Label>
-                      <Select value={currentUser} onValueChange={setCurrentUser} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecteer je naam" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((user) => (
-                            <SelectItem key={user} value={user}>
-                              {user}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Product */}
-                    <div className="space-y-2">
-                      <Label htmlFor="product" className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-amber-500" />
-                        Product
-                      </Label>
-                      <Select value={selectedProduct} onValueChange={setSelectedProduct} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecteer een product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product} value={product}>
-                              {product}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Locatie */}
-                    <div className="space-y-2">
-                      <Label htmlFor="location" className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-amber-500" />
-                        Locatie
-                      </Label>
-                      <Select value={location} onValueChange={setLocation} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecteer een locatie" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locations.map((loc) => (
-                            <SelectItem key={loc} value={loc}>
-                              {loc}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Doel */}
-                    <div className="space-y-2">
-                      <Label htmlFor="purpose" className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-amber-500" />
-                        Doel/Toepassing
-                      </Label>
-                      <Select value={purpose} onValueChange={setPurpose} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecteer een doel" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {purposes.map((purposeItem) => (
-                            <SelectItem key={purposeItem} value={purposeItem}>
-                              {purposeItem}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full bg-amber-600 hover:bg-amber-700"
-                      size="lg"
-                      disabled={isLoading}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {isLoading ? "Registreren..." : "Registreren"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* Foto Upload */}
-              <PhotoUpload onPhotoUploaded={setCurrentPhoto} currentPhoto={currentPhoto} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="statistics">
-            <StatisticsDashboard entries={entries} />
-          </TabsContent>
-
-          <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <History className="h-5 w-5 text-amber-500" />
-                      Registratie Geschiedenis
-                    </CardTitle>
-                    <CardDescription>
-                      Overzicht van alle geregistreerde producten ({getFilteredAndSortedEntries().length} van{" "}
-                      {entries.length} items)
-                    </CardDescription>
-                  </div>
-                  {entries.length > 0 && (
-                    <Button onClick={exportToCSV} variant="outline">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export CSV
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Zoek en Filter Sectie */}
-                <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg border">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Zoeken & Filteren</h3>
-                    <Button onClick={clearAllFilters} variant="outline" size="sm">
-                      Wis filters
-                    </Button>
-                  </div>
-
-                  {/* Zoekbalk */}
-                  <div className="space-y-2">
-                    <Label htmlFor="search">Zoeken</Label>
-                    <Input
-                      id="search"
-                      placeholder="Zoek in alle velden..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-
-                  {/* Filters */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Gebruiker Filter */}
-                    <div className="space-y-2">
-                      <Label>Gebruiker</Label>
-                      <Select value={filterUser} onValueChange={setFilterUser}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Alle gebruikers" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Alle gebruikers</SelectItem>
-                          {users.map((user) => (
-                            <SelectItem key={user} value={user}>
-                              {user}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Product Filter */}
-                    <div className="space-y-2">
-                      <Label>Product</Label>
-                      <Input
-                        placeholder="Zoek product..."
-                        value={filterProduct}
-                        onChange={(e) => setFilterProduct(e.target.value)}
-                      />
-                    </div>
-
-                    {/* Locatie Filter */}
-                    <div className="space-y-2">
-                      <Label>Locatie</Label>
-                      <Select value={filterLocation} onValueChange={setFilterLocation}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Alle locaties" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Alle locaties</SelectItem>
-                          {locations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Sorteren */}
-                    <div className="space-y-2">
-                      <Label>Sorteren</Label>
-                      <div className="flex gap-2">
-                        <Select value={sortBy} onValueChange={(value: "date" | "user" | "product") => setSortBy(value)}>
-                          <SelectTrigger className="flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="date">Datum</SelectItem>
-                            <SelectItem value="user">Gebruiker</SelectItem>
-                            <SelectItem value="product">Product</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                          className="px-3"
-                        >
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Datum Filters */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="dateFrom">Van datum</Label>
-                      <Input
-                        id="dateFrom"
-                        type="date"
-                        value={filterDateFrom}
-                        onChange={(e) => setFilterDateFrom(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dateTo">Tot datum</Label>
-                      <Input
-                        id="dateTo"
-                        type="date"
-                        value={filterDateTo}
-                        onChange={(e) => setFilterDateTo(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Resultaten */}
-                {getFilteredAndSortedEntries().length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {entries.length === 0
-                      ? "Nog geen registraties. Begin met het registreren van een product!"
-                      : "Geen resultaten gevonden voor de huidige filters."}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {getFilteredAndSortedEntries().map((entry) => (
-                      <div key={entry.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                {entry.user}
-                              </Badge>
-                              <span className="text-sm text-gray-500">
-                                {entry.date} om {entry.time}
-                              </span>
-                              {entry.qr_code && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  QR
-                                </Badge>
-                              )}
-                              {entry.photo_url && (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  📷
-                                </Badge>
-                              )}
-                            </div>
-                            <h3 className="font-semibold text-lg">{entry.product}</h3>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3 text-amber-500" />
-                                {entry.location}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Target className="h-3 w-3 text-amber-500" />
-                                {entry.purpose}
-                              </span>
-                            </div>
-                            {entry.qr_code && <div className="text-xs text-gray-500">QR: {entry.qr_code}</div>}
-                          </div>
-                          {entry.photo_url && (
-                            <div className="ml-4">
-                              <img
-                                src={entry.photo_url || "/placeholder.svg"}
-                                alt="Registratie foto"
-                                className="w-16 h-16 object-cover rounded-lg border"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users">
-            <div className="space-y-6">
-              {/* Excel Import */}
-              <ExcelImporter
-                title="Gebruikers Importeren"
-                description="Importeer meerdere gebruikers tegelijk vanuit een CSV of TXT bestand"
-                onImport={handleUsersImport}
-                existingItems={users}
-                type="users"
-              />
-
-              {/* Nieuwe gebruiker toevoegen */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-amber-500" />
-                    Nieuwe Gebruiker Toevoegen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer gebruikersnaam in"
-                      value={newUserName}
-                      onChange={(e) => setNewUserName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewUser()}
-                    />
-                    <Button
-                      onClick={addNewUser}
-                      disabled={!newUserName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Toevoegen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Gebruikers lijst */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gebruikers Beheren ({users.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {users.map((user) => (
-                      <div key={user} className="flex items-center justify-between p-3 border rounded-lg">
-                        <span className="font-medium">{user}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeUser(user)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="products">
-            <div className="space-y-6">
-              {/* Excel Import */}
-              <ExcelImporter
-                title="Producten Importeren"
-                description="Importeer meerdere producten tegelijk vanuit een CSV of TXT bestand"
-                onImport={handleProductsImport}
-                existingItems={products}
-                type="products"
-              />
-
-              {/* Nieuw product toevoegen */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-amber-500" />
-                    Nieuw Product Toevoegen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer productnaam in"
-                      value={newProductName}
-                      onChange={(e) => setNewProductName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewProduct()}
-                    />
-                    <Button
-                      onClick={addNewProduct}
-                      disabled={!newProductName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
-                    >
-                      <Package className="h-4 w-4 mr-2" />
-                      Toevoegen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Producten lijst */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Producten Beheren ({products.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {products.map((product) => (
-                      <div key={product} className="flex items-center justify-between p-3 border rounded-lg">
-                        <span className="font-medium">{product}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeProduct(product)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="locations">
-            <div className="space-y-6">
-              {/* Excel Import */}
-              <ExcelImporter
-                title="Locaties Importeren"
-                description="Importeer meerdere locaties tegelijk vanuit een CSV of TXT bestand"
-                onImport={handleLocationsImport}
-                existingItems={locations}
-                type="locations"
-              />
-
-              {/* Nieuwe locatie toevoegen */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-amber-500" />
-                    Nieuwe Locatie Toevoegen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer locatienaam in"
-                      value={newLocationName}
-                      onChange={(e) => setNewLocationName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewLocation()}
-                    />
-                    <Button
-                      onClick={addNewLocation}
-                      disabled={!newLocationName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
-                    >
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Toevoegen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Locaties lijst */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Locaties Beheren ({locations.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {locations.map((loc) => (
-                      <div key={loc} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-amber-500" />
-                          <span className="font-medium">{loc}</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeLocation(loc)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="purposes">
-            <div className="space-y-6">
-              {/* Excel Import */}
-              <ExcelImporter
-                title="Doelen Importeren"
-                description="Importeer meerdere doelen tegelijk vanuit een CSV of TXT bestand"
-                onImport={handlePurposesImport}
-                existingItems={purposes}
-                type="purposes"
-              />
-
-              {/* Nieuw doel toevoegen */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-amber-500" />
-                    Nieuw Doel Toevoegen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Voer doel/toepassing in"
-                      value={newPurposeName}
-                      onChange={(e) => setNewPurposeName(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addNewPurpose()}
-                    />
-                    <Button
-                      onClick={addNewPurpose}
-                      disabled={!newPurposeName.trim()}
-                      className="bg-amber-600 hover:bg-amber-700"
-                    >
-                      <Target className="h-4 w-4 mr-2" />
-                      Toevoegen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Doelen lijst */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Doelen Beheren ({purposes.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {purposes.map((purposeItem) => (
-                      <div key={purposeItem} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-amber-500" />
-                          <span className="font-medium">{purposeItem}</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removePurpose(purposeItem)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* QR Scanner Modal */}
-      {showQRScanner && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <QRScanner onScan={handleQRScan} onClose={() => setShowQRScanner(false)} />
-        </div>
-      )}
-
-      {/* Footer */}
-      <footer className="mt-12 border-t border-gray-200 bg-white py-6">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <img src="/dematic-logo.png" alt="Interflon Logo" className="h-8 w-auto mr-3" />
-              <p className="text-sm text-gray-600">
-                © {new Date().getFullYear()} Interflon. Alle rechten voorbehouden.
-              </p>
-            </div>
-            <div className="flex items-center gap-6">
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
-                Privacy
-              </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
-                Voorwaarden
-              </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
-  )
-}
+     
