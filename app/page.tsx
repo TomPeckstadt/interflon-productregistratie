@@ -525,13 +525,27 @@ export default function ProductRegistrationApp() {
           (p) => p.name === newProductName.trim() || (qrcode && p.qrcode === qrcode),
         )
         if (!existingProduct) {
-          await saveProduct({ name: newProductName.trim(), qrcode })
-          setNewProductName("")
-          setNewProductQrCode("")
-          setImportMessage("✅ Product toegevoegd!")
-          setTimeout(() => setImportMessage(""), 2000)
+          console.log("addNewProduct aangeroepen voor:", newProductName.trim())
+          const result = await saveProduct({ name: newProductName.trim(), qrcode })
+
+          if (result.error) {
+            console.error("Fout bij toevoegen product:", result.error)
+            setImportError(`Fout bij toevoegen product: ${result.error.message || "Onbekende fout"}`)
+          } else {
+            // Direct het product toevoegen aan de lijst als fallback voor realtime updates
+            if (result.data) {
+              console.log("Product direct toevoegen aan lijst:", result.data)
+              setProducts((prevProducts) => [result.data, ...prevProducts])
+            }
+
+            setNewProductName("")
+            setNewProductQrCode("")
+            setImportMessage("✅ Product toegevoegd!")
+            setTimeout(() => setImportMessage(""), 2000)
+          }
         }
       } catch (error) {
+        console.error("Onverwachte fout bij toevoegen product:", error)
         setImportError("Fout bij toevoegen product")
       }
     }
@@ -541,11 +555,25 @@ export default function ProductRegistrationApp() {
   const addNewLocation = async () => {
     if (newLocationName.trim() && !locations.includes(newLocationName.trim())) {
       try {
-        await saveLocation(newLocationName.trim())
-        setNewLocationName("")
-        setImportMessage("✅ Locatie toegevoegd!")
-        setTimeout(() => setImportMessage(""), 2000)
+        console.log("addNewLocation aangeroepen voor:", newLocationName.trim())
+        const result = await saveLocation(newLocationName.trim())
+
+        if (result.error) {
+          console.error("Fout bij toevoegen locatie:", result.error)
+          setImportError(`Fout bij toevoegen locatie: ${result.error.message || "Onbekende fout"}`)
+        } else {
+          // Direct de locatie toevoegen aan de lijst als fallback voor realtime updates
+          if (result.data) {
+            console.log("Locatie direct toevoegen aan lijst:", result.data)
+            setLocations((prevLocations) => [newLocationName.trim(), ...prevLocations])
+          }
+
+          setNewLocationName("")
+          setImportMessage("✅ Locatie toegevoegd!")
+          setTimeout(() => setImportMessage(""), 2000)
+        }
       } catch (error) {
+        console.error("Onverwachte fout bij toevoegen locatie:", error)
         setImportError("Fout bij toevoegen locatie")
       }
     }
@@ -555,11 +583,25 @@ export default function ProductRegistrationApp() {
   const addNewPurpose = async () => {
     if (newPurposeName.trim() && !purposes.includes(newPurposeName.trim())) {
       try {
-        await savePurpose(newPurposeName.trim())
-        setNewPurposeName("")
-        setImportMessage("✅ Doel toegevoegd!")
-        setTimeout(() => setImportMessage(""), 2000)
+        console.log("addNewPurpose aangeroepen voor:", newPurposeName.trim())
+        const result = await savePurpose(newPurposeName.trim())
+
+        if (result.error) {
+          console.error("Fout bij toevoegen doel:", result.error)
+          setImportError(`Fout bij toevoegen doel: ${result.error.message || "Onbekende fout"}`)
+        } else {
+          // Direct het doel toevoegen aan de lijst als fallback voor realtime updates
+          if (result.data) {
+            console.log("Doel direct toevoegen aan lijst:", result.data)
+            setPurposes((prevPurposes) => [newPurposeName.trim(), ...prevPurposes])
+          }
+
+          setNewPurposeName("")
+          setImportMessage("✅ Doel toegevoegd!")
+          setTimeout(() => setImportMessage(""), 2000)
+        }
       } catch (error) {
+        console.error("Onverwachte fout bij toevoegen doel:", error)
         setImportError("Fout bij toevoegen doel")
       }
     }
