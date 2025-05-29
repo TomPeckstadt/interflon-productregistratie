@@ -1135,7 +1135,11 @@ export default function ProductRegistrationApp() {
             {/* Footer logo */}
             <div className="flex items-center mb-4 md:mb-0">
               <div className="flex items-center mr-4">
-                <img src="/images/interflon-logo.png" alt="Interflon Logo" className="w-8 h-8 mr-2" />
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo%20FB%20transparant.jpg-JHmdbCgpI0bC4vPXL5gWiWBoMSbPlJ.jpeg"
+                  alt="Interflon Logo"
+                  className="w-8 h-8 mr-2"
+                />
                 <div className="text-lg font-bold text-gray-700">INTERFLON</div>
               </div>
               <p className="text-sm text-gray-600">
