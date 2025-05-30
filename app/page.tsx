@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
 import {
   fetchProducts,
@@ -35,7 +34,21 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Download, Search, X, QrCode, FileText, Plus, Trash2, Users, Package } from "lucide-react"
+import {
+  Download,
+  Search,
+  X,
+  QrCode,
+  FileText,
+  Plus,
+  Trash2,
+  Users,
+  Package,
+  BarChart3,
+  TrendingUp,
+  Clock,
+  MapPin,
+} from "lucide-react"
 
 export default function ProductRegistrationApp() {
   const [currentUser, setCurrentUser] = useState("")
@@ -101,13 +114,10 @@ export default function ProductRegistrationApp() {
     }
   }, [cameraStream])
 
-  // Voeg een betere foutafhandeling toe aan de loadAllData functie:
-
   const loadAllData = async () => {
     try {
       setConnectionStatus("connecting")
 
-      // Controleer eerst of de omgevingsvariabelen beschikbaar zijn
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         console.error("Supabase omgevingsvariabelen ontbreken")
         setConnectionStatus("error")
@@ -115,7 +125,6 @@ export default function ProductRegistrationApp() {
         return
       }
 
-      // Laad alle data parallel
       const [usersResult, productsResult, locationsResult, purposesResult, registrationsResult] = await Promise.all([
         fetchUsers(),
         fetchProducts(),
@@ -146,12 +155,10 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Wijzig de setupRealtimeSubscriptions functie om betere foutafhandeling toe te voegen
   const setupRealtimeSubscriptions = () => {
     console.log("Setting up realtime subscriptions...")
 
     try {
-      // Setup realtime subscriptions voor automatische sync
       const unsubscribeProducts = subscribeToProducts((updatedProducts) => {
         console.log("Products subscription update received:", updatedProducts.length)
         setProducts(updatedProducts)
@@ -179,7 +186,6 @@ export default function ProductRegistrationApp() {
 
       console.log("All realtime subscriptions set up successfully")
 
-      // Cleanup functie
       return () => {
         console.log("Cleaning up subscriptions...")
         if (unsubscribeProducts) unsubscribeProducts.unsubscribe()
@@ -195,7 +201,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // QR Scanner functies
   const startQrScanner = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -272,7 +277,6 @@ export default function ProductRegistrationApp() {
     stopQrScanner()
   }
 
-  // Excel import functie
   const handleFileImport = async (file: File, type: "users" | "products" | "locations" | "purposes") => {
     try {
       setImportError("")
@@ -318,7 +322,6 @@ export default function ProductRegistrationApp() {
         return
       }
 
-      // Save items to database
       let savedCount = 0
       for (const item of items) {
         try {
@@ -351,7 +354,6 @@ export default function ProductRegistrationApp() {
         `✅ ${savedCount} nieuwe ${type} geïmporteerd! (${items.length - savedCount} duplicaten overgeslagen)`,
       )
 
-      // Reset file input
       if (type === "users" && userFileInputRef.current) userFileInputRef.current.value = ""
       if (type === "products" && productFileInputRef.current) productFileInputRef.current.value = ""
       if (type === "locations" && locationFileInputRef.current) locationFileInputRef.current.value = ""
@@ -364,7 +366,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Export template functie
   const exportTemplate = (type: "users" | "products" | "locations" | "purposes") => {
     let templateData: string[] = []
     let filename = ""
@@ -406,7 +407,6 @@ export default function ProductRegistrationApp() {
     document.body.removeChild(link)
   }
 
-  // Registreer nieuw item
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -434,17 +434,14 @@ export default function ProductRegistrationApp() {
       const result = await saveRegistration(newEntry)
 
       if (result.data) {
-        // Direct de registratie toevoegen aan de lijst als fallback voor realtime updates
         console.log("Registratie direct toevoegen aan lijst:", result.data)
         setEntries((prevEntries) => [result.data, ...prevEntries])
 
-        // Reset form
         setSelectedProduct("")
         setLocation("")
         setPurpose("")
         setQrScanResult("")
 
-        // Toon success bericht
         setShowSuccess(true)
         setTimeout(() => setShowSuccess(false), 3000)
       } else {
@@ -458,7 +455,6 @@ export default function ProductRegistrationApp() {
     setIsLoading(false)
   }
 
-  // Export naar CSV
   const exportToCSV = () => {
     const filteredEntries = getFilteredAndSortedEntries()
     const headers = ["Datum", "Tijd", "Gebruiker", "Product", "QR Code", "Locatie", "Doel"]
@@ -492,7 +488,6 @@ export default function ProductRegistrationApp() {
     document.body.removeChild(link)
   }
 
-  // Wijzig de addNewUser functie om direct de gebruiker toe te voegen aan de lijst als fallback
   const addNewUser = async () => {
     if (newUserName.trim() && !users.includes(newUserName.trim())) {
       try {
@@ -504,7 +499,6 @@ export default function ProductRegistrationApp() {
           setImportError(`Fout bij toevoegen gebruiker: ${result.error.message || "Onbekende fout"}`)
           setTimeout(() => setImportError(""), 5000)
         } else {
-          // Direct de gebruiker toevoegen aan de lijst als fallback voor realtime updates
           if (result.data) {
             console.log("Gebruiker direct toevoegen aan lijst:", result.data)
             setUsers((prevUsers) => [...prevUsers, newUserName.trim()])
@@ -522,7 +516,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuw product toe
   const addNewProduct = async () => {
     if (newProductName.trim()) {
       try {
@@ -538,7 +531,6 @@ export default function ProductRegistrationApp() {
             console.error("Fout bij toevoegen product:", result.error)
             setImportError(`Fout bij toevoegen product: ${result.error.message || "Onbekende fout"}`)
           } else {
-            // Direct het product toevoegen aan de lijst als fallback voor realtime updates
             if (result.data) {
               console.log("Product direct toevoegen aan lijst:", result.data)
               setProducts((prevProducts) => [result.data, ...prevProducts])
@@ -557,7 +549,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuwe locatie toe
   const addNewLocation = async () => {
     if (newLocationName.trim() && !locations.includes(newLocationName.trim())) {
       try {
@@ -568,7 +559,6 @@ export default function ProductRegistrationApp() {
           console.error("Fout bij toevoegen locatie:", result.error)
           setImportError(`Fout bij toevoegen locatie: ${result.error.message || "Onbekende fout"}`)
         } else {
-          // Direct de locatie toevoegen aan de lijst als fallback voor realtime updates
           if (result.data) {
             console.log("Locatie direct toevoegen aan lijst:", result.data)
             setLocations((prevLocations) => [newLocationName.trim(), ...prevLocations])
@@ -585,7 +575,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Voeg nieuw doel toe
   const addNewPurpose = async () => {
     if (newPurposeName.trim() && !purposes.includes(newPurposeName.trim())) {
       try {
@@ -596,7 +585,6 @@ export default function ProductRegistrationApp() {
           console.error("Fout bij toevoegen doel:", result.error)
           setImportError(`Fout bij toevoegen doel: ${result.error.message || "Onbekende fout"}`)
         } else {
-          // Direct het doel toevoegen aan de lijst als fallback voor realtime updates
           if (result.data) {
             console.log("Doel direct toevoegen aan lijst:", result.data)
             setPurposes((prevPurposes) => [newPurposeName.trim(), ...prevPurposes])
@@ -613,7 +601,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Wijzig de removeUser functie om direct de gebruiker te verwijderen uit de lijst als fallback
   const removeUser = async (userToRemove: string) => {
     try {
       console.log("removeUser functie aangeroepen voor:", userToRemove)
@@ -624,7 +611,6 @@ export default function ProductRegistrationApp() {
         setImportError(`Fout bij verwijderen gebruiker: ${result.error.message || "Onbekende fout"}`)
         setTimeout(() => setImportError(""), 5000)
       } else {
-        // Direct de gebruiker verwijderen uit de lijst als fallback voor realtime updates
         console.log("Gebruiker direct verwijderen uit lijst:", userToRemove)
         setUsers((prevUsers) => prevUsers.filter((u) => u !== userToRemove))
 
@@ -638,7 +624,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Wijzig de removeProduct functie om direct het product te verwijderen uit de lijst als fallback
   const removeProduct = async (productToRemove: Product) => {
     try {
       if (productToRemove.id) {
@@ -649,7 +634,6 @@ export default function ProductRegistrationApp() {
           console.error("Fout bij verwijderen product:", result.error)
           setImportError(`Fout bij verwijderen product: ${result.error.message || "Onbekende fout"}`)
         } else {
-          // Direct het product verwijderen uit de lijst als fallback voor realtime updates
           console.log("Product direct verwijderen uit lijst:", productToRemove.id)
           setProducts((prevProducts) => prevProducts.filter((p) => p.id !== productToRemove.id))
 
@@ -664,7 +648,6 @@ export default function ProductRegistrationApp() {
   }
 
   const removeLocation = async (locationToRemove: string) => {
-    // Wijzig de removeLocation functie om direct de locatie te verwijderen uit de lijst als fallback
     try {
       console.log("removeLocation aangeroepen voor:", locationToRemove)
       const result = await deleteLocation(locationToRemove)
@@ -673,7 +656,6 @@ export default function ProductRegistrationApp() {
         console.error("Fout bij verwijderen locatie:", result.error)
         setImportError(`Fout bij verwijderen locatie: ${result.error.message || "Onbekende fout"}`)
       } else {
-        // Direct de locatie verwijderen uit de lijst als fallback voor realtime updates
         console.log("Locatie direct verwijderen uit lijst:", locationToRemove)
         setLocations((prevLocations) => prevLocations.filter((l) => l !== locationToRemove))
 
@@ -687,7 +669,6 @@ export default function ProductRegistrationApp() {
   }
 
   const removePurpose = async (purposeToRemove: string) => {
-    // Wijzig de removePurpose functie om direct het doel te verwijderen uit de lijst als fallback
     try {
       console.log("removePurpose aangeroepen voor:", purposeToRemove)
       const result = await deletePurpose(purposeToRemove)
@@ -696,7 +677,6 @@ export default function ProductRegistrationApp() {
         console.error("Fout bij verwijderen doel:", result.error)
         setImportError(`Fout bij verwijderen doel: ${result.error.message || "Onbekende fout"}`)
       } else {
-        // Direct het doel verwijderen uit de lijst als fallback voor realtime updates
         console.log("Doel direct verwijderen uit lijst:", purposeToRemove)
         setPurposes((prevPurposes) => prevPurposes.filter((p) => p !== purposeToRemove))
 
@@ -709,7 +689,6 @@ export default function ProductRegistrationApp() {
     }
   }
 
-  // Filter en zoek functies
   const getFilteredAndSortedEntries = () => {
     const filtered = entries.filter((entry) => {
       const searchMatch =
@@ -761,7 +740,6 @@ export default function ProductRegistrationApp() {
     return filtered
   }
 
-  // Wis alle filters
   const clearAllFilters = () => {
     setSearchQuery("")
     setFilterUser("all")
@@ -773,14 +751,11 @@ export default function ProductRegistrationApp() {
     setSortOrder("desc")
   }
 
-  // Statistieken berekenen
   const calculateStatistics = () => {
-    // Totalen
     const totalRegistrations = entries.length
     const uniqueUsers = new Set(entries.map((entry) => entry.user)).size
     const uniqueProducts = new Set(entries.map((entry) => entry.product)).size
 
-    // Top gebruikers
     const userCounts: Record<string, number> = {}
     entries.forEach((entry) => {
       userCounts[entry.user] = (userCounts[entry.user] || 0) + 1
@@ -789,7 +764,6 @@ export default function ProductRegistrationApp() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
 
-    // Top producten
     const productCounts: Record<string, number> = {}
     entries.forEach((entry) => {
       productCounts[entry.product] = (productCounts[entry.product] || 0) + 1
@@ -798,7 +772,6 @@ export default function ProductRegistrationApp() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
 
-    // Top locaties
     const locationCounts: Record<string, number> = {}
     entries.forEach((entry) => {
       locationCounts[entry.location] = (locationCounts[entry.location] || 0) + 1
@@ -807,10 +780,11 @@ export default function ProductRegistrationApp() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
 
-    // Recente activiteit
-    const recentActivity = [...entries].sort((a, b) => {
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    }).slice(0, 10)
+    const recentActivity = [...entries]
+      .sort((a, b) => {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      })
+      .slice(0, 10)
 
     return {
       totalRegistrations,
@@ -831,9 +805,7 @@ export default function ProductRegistrationApp() {
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6">
-            {/* Logo en titel sectie */}
             <div className="flex flex-col lg:flex-row items-center gap-6">
-              {/* DEMATIC Logo */}
               <div className="flex-shrink-0">
                 <div className="flex items-center bg-white p-4 rounded-lg shadow-sm border">
                   <div className="w-1 h-12 bg-amber-500 mr-4"></div>
@@ -841,17 +813,14 @@ export default function ProductRegistrationApp() {
                 </div>
               </div>
 
-              {/* Divider lijn */}
               <div className="hidden lg:block w-px h-16 bg-gray-300"></div>
 
-              {/* App titel */}
               <div className="text-center lg:text-left">
                 <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Product Registratie</h1>
                 <p className="text-sm lg:text-base text-gray-600 mt-1">Registreer product gebruik en locatie</p>
               </div>
             </div>
 
-            {/* Status info */}
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <div
@@ -884,7 +853,6 @@ export default function ProductRegistrationApp() {
           </Alert>
         )}
 
-        {/* Import berichten */}
         {importMessage && (
           <Alert className="mb-6 border-blue-200 bg-blue-50">
             <AlertDescription className="text-blue-800">{importMessage}</AlertDescription>
@@ -1025,7 +993,6 @@ export default function ProductRegistrationApp() {
                     </div>
                   </div>
 
-                  {/* QR Scanner Modal */}
                   {showQrScanner && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
@@ -1071,7 +1038,6 @@ export default function ProductRegistrationApp() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {/* Zoek en filter sectie */}
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
                     <div className="flex flex-col sm:flex-row gap-4">
                       <div className="flex-1">
@@ -1155,7 +1121,10 @@ export default function ProductRegistrationApp() {
                         <Label htmlFor="sortBy" className="text-sm font-medium mb-1 block">
                           Sorteer op
                         </Label>
-                        <Select value={sortBy} onValueChange={(value) => setSortBy(value as "date" | "user" | "product")}>
+                        <Select
+                          value={sortBy}
+                          onValueChange={(value) => setSortBy(value as "date" | "user" | "product")}
+                        >
                           <SelectTrigger id="sortBy">
                             <SelectValue placeholder="Sorteer op" />
                           </SelectTrigger>
@@ -1192,7 +1161,6 @@ export default function ProductRegistrationApp() {
                     </div>
                   </div>
 
-                  {/* Resultaten tabel */}
                   <div className="rounded-lg border overflow-hidden">
                     <Table>
                       <TableHeader className="bg-gray-50">
@@ -1252,7 +1220,6 @@ export default function ProductRegistrationApp() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {/* Nieuwe gebruiker toevoegen */}
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="text-lg font-medium mb-4">Nieuwe gebruiker toevoegen</h3>
                     <div className="flex flex-col sm:flex-row gap-4">
@@ -1273,7 +1240,6 @@ export default function ProductRegistrationApp() {
                     </div>
                   </div>
 
-                  {/* Import/Export sectie */}
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
                     <div className="flex flex-col sm:flex-row gap-4">
@@ -1305,7 +1271,6 @@ export default function ProductRegistrationApp() {
                     </div>
                   </div>
 
-                  {/* Gebruikers lijst */}
                   <div className="rounded-lg border overflow-hidden">
                     <Table>
                       <TableHeader className="bg-gray-50">
@@ -1357,7 +1322,6 @@ export default function ProductRegistrationApp() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {/* Nieuw product toevoegen */}
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="text-lg font-medium mb-4">Nieuw product toevoegen</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1404,7 +1368,6 @@ export default function ProductRegistrationApp() {
                     </div>
                   </div>
 
-                  {/* Import/Export sectie */}
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
                     <div className="flex flex-col sm:flex-row gap-4">
@@ -1419,4 +1382,470 @@ export default function ProductRegistrationApp() {
                             accept=".csv"
                             ref={productFileInputRef}
                             onChange={(e) => {
-                              if (e.target.files && e.target.files[0])\
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileImport(e.target.files[0], "products")
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={() => exportTemplate("products")}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            <FileText className="mr-1 h-4 w-4" /> Template
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow>
+                          <TableHead>Naam</TableHead>
+                          <TableHead className="hidden md:table-cell">QR Code</TableHead>
+                          <TableHead className="w-[100px] text-right">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {products.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                              Geen producten gevonden
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          products.map((product) => (
+                            <TableRow key={product.id}>
+                              <TableCell className="font-medium">{product.name}</TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {product.qrcode ? (
+                                  <Badge variant="outline" className="font-mono text-xs">
+                                    {product.qrcode}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  onClick={() => removeProduct(product)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Verwijder {product.name}</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="locations">
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <MapPin className="h-5 w-5" /> Locaties Beheren
+                </CardTitle>
+                <CardDescription>Voeg nieuwe locaties toe of verwijder bestaande locaties</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Nieuwe locatie toevoegen</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="newLocationName" className="sr-only">
+                          Locatie naam
+                        </Label>
+                        <Input
+                          id="newLocationName"
+                          placeholder="Voer locatie naam in..."
+                          value={newLocationName}
+                          onChange={(e) => setNewLocationName(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={addNewLocation} className="bg-amber-600 hover:bg-amber-700">
+                        <Plus className="mr-1 h-4 w-4" /> Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="locationImport" className="block text-sm font-medium mb-1">
+                          Importeer locaties (CSV of TXT)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="locationImport"
+                            type="file"
+                            accept=".csv,.txt"
+                            ref={locationFileInputRef}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileImport(e.target.files[0], "locations")
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={() => exportTemplate("locations")}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            <FileText className="mr-1 h-4 w-4" /> Template
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow>
+                          <TableHead>Naam</TableHead>
+                          <TableHead className="w-[100px] text-right">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {locations.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center py-8 text-gray-500">
+                              Geen locaties gevonden
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          locations.map((location) => (
+                            <TableRow key={location}>
+                              <TableCell className="font-medium">{location}</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  onClick={() => removeLocation(location)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Verwijder {location}</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="purposes">
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">🎯 Doelen Beheren</CardTitle>
+                <CardDescription>Voeg nieuwe doelen toe of verwijder bestaande doelen</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Nieuw doel toevoegen</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="newPurposeName" className="sr-only">
+                          Doel naam
+                        </Label>
+                        <Input
+                          id="newPurposeName"
+                          placeholder="Voer doel naam in..."
+                          value={newPurposeName}
+                          onChange={(e) => setNewPurposeName(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={addNewPurpose} className="bg-amber-600 hover:bg-amber-700">
+                        <Plus className="mr-1 h-4 w-4" /> Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="purposeImport" className="block text-sm font-medium mb-1">
+                          Importeer doelen (CSV of TXT)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="purposeImport"
+                            type="file"
+                            accept=".csv,.txt"
+                            ref={purposeFileInputRef}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileImport(e.target.files[0], "purposes")
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={() => exportTemplate("purposes")}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            <FileText className="mr-1 h-4 w-4" /> Template
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow>
+                          <TableHead>Naam</TableHead>
+                          <TableHead className="w-[100px] text-right">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {purposes.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center py-8 text-gray-500">
+                              Geen doelen gevonden
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          purposes.map((purpose) => (
+                            <TableRow key={purpose}>
+                              <TableCell className="font-medium">{purpose}</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  onClick={() => removePurpose(purpose)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Verwijder {purpose}</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="statistics">
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <BarChart3 className="h-5 w-5" /> Statistieken & Rapporten
+                </CardTitle>
+                <CardDescription>Overzicht van product registraties en gebruiksstatistieken</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  {/* Overzicht kaarten */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-blue-600">Totaal Registraties</p>
+                            <p className="text-2xl font-bold text-blue-900">{stats.totalRegistrations}</p>
+                          </div>
+                          <BarChart3 className="h-8 w-8 text-blue-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-green-600">Actieve Gebruikers</p>
+                            <p className="text-2xl font-bold text-green-900">{stats.uniqueUsers}</p>
+                          </div>
+                          <Users className="h-8 w-8 text-green-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-purple-600">Gebruikte Producten</p>
+                            <p className="text-2xl font-bold text-purple-900">{stats.uniqueProducts}</p>
+                          </div>
+                          <Package className="h-8 w-8 text-purple-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Top lijsten */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" /> Top Gebruikers
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {stats.topUsers.length === 0 ? (
+                            <p className="text-gray-500 text-center py-4">Geen data beschikbaar</p>
+                          ) : (
+                            stats.topUsers.map(([user, count], index) => (
+                              <div key={user} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">
+                                    {index + 1}
+                                  </div>
+                                  <span className="font-medium">{user}</span>
+                                </div>
+                                <Badge variant="secondary">{count} registraties</Badge>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Package className="h-5 w-5" /> Top Producten
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {stats.topProducts.length === 0 ? (
+                            <p className="text-gray-500 text-center py-4">Geen data beschikbaar</p>
+                          ) : (
+                            stats.topProducts.map(([product, count], index) => (
+                              <div key={product} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">
+                                    {index + 1}
+                                  </div>
+                                  <span className="font-medium">{product}</span>
+                                </div>
+                                <Badge variant="secondary">{count} keer gebruikt</Badge>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <MapPin className="h-5 w-5" /> Top Locaties
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {stats.topLocations.length === 0 ? (
+                            <p className="text-gray-500 text-center py-4">Geen data beschikbaar</p>
+                          ) : (
+                            stats.topLocations.map(([location, count], index) => (
+                              <div key={location} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">
+                                    {index + 1}
+                                  </div>
+                                  <span className="font-medium">{location}</span>
+                                </div>
+                                <Badge variant="secondary">{count} registraties</Badge>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="h-5 w-5" /> Recente Activiteit
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {stats.recentActivity.length === 0 ? (
+                            <p className="text-gray-500 text-center py-4">Geen recente activiteit</p>
+                          ) : (
+                            stats.recentActivity.map((entry) => (
+                              <div key={entry.id} className="flex items-center justify-between text-sm">
+                                <div>
+                                  <span className="font-medium">{entry.user}</span>
+                                  <span className="text-gray-500"> gebruikte </span>
+                                  <span className="font-medium">{entry.product}</span>
+                                </div>
+                                <span className="text-gray-500">{entry.time}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-12 border-t border-gray-200 bg-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center mb-4 md:mb-0">
+              <div className="flex items-center mr-4">
+                <div className="w-8 h-8 bg-red-600 rounded mr-2 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">I</span>
+                </div>
+                <div className="text-lg font-bold text-gray-700">INTERFLON</div>
+              </div>
+              <p className="text-sm text-gray-600">
+                © {new Date().getFullYear()} INTERFLON. Alle rechten voorbehouden.
+              </p>
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Privacy
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Voorwaarden
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+                Contact
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
