@@ -50,6 +50,21 @@ import {
   MapPin,
 } from "lucide-react"
 
+// Voeg deze imports toe voor de charts
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  LineChart,
+  Line,
+} from "recharts"
+
 export default function ProductRegistrationApp() {
   const [currentUser, setCurrentUser] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("")
@@ -1656,12 +1671,14 @@ export default function ProductRegistrationApp() {
             <Card className="shadow-sm">
               <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  <BarChart3 className="h-5 w-5" /> Statistieken & Rapporten
+                  <BarChart3 className="h-5 w-5" /> Dashboard & Statistieken
                 </CardTitle>
-                <CardDescription>Overzicht van product registraties en gebruiksstatistieken</CardDescription>
+                <CardDescription>
+                  Overzicht van product registraties en gebruiksstatistieken met grafieken
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Overzicht kaarten */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
@@ -1701,8 +1718,114 @@ export default function ProductRegistrationApp() {
                     </Card>
                   </div>
 
-                  {/* Top lijsten */}
+                  {/* Grafieken sectie - kleiner gemaakt */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Top Gebruikers Chart */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" /> Top Gebruikers (Grafiek)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {stats.topUsers.length > 0 ? (
+                          <div className="h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={stats.topUsers.map(([name, count]) => ({ name, count }))}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={12} />
+                                <YAxis fontSize={12} />
+                                <Tooltip />
+                                <Bar dataKey="count" fill="#f59e0b" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">Geen data beschikbaar</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Top Producten Chart */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Package className="h-5 w-5" /> Top Producten (Grafiek)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {stats.topProducts.length > 0 ? (
+                          <div className="h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={stats.topProducts.map(([name, count], index) => ({
+                                    name,
+                                    count,
+                                    fill: ["#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444"][index % 5],
+                                  }))}
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={60}
+                                  dataKey="count"
+                                  label={({ name, percent }) =>
+                                    `${name.length > 15 ? name.substring(0, 15) + "..." : name} (${(percent * 100).toFixed(0)}%)`
+                                  }
+                                  fontSize={10}
+                                />
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">Geen data beschikbaar</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Activiteit per dag */}
+                    <Card className="lg:col-span-2">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="h-5 w-5" /> Activiteit per Dag (Laatste 7 dagen)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {(() => {
+                          // Bereken activiteit per dag voor de laatste 7 dagen
+                          const last7Days = Array.from({ length: 7 }, (_, i) => {
+                            const date = new Date()
+                            date.setDate(date.getDate() - i)
+                            return date.toLocaleDateString("nl-NL")
+                          }).reverse()
+
+                          const activityPerDay = last7Days.map((date) => {
+                            const count = entries.filter((entry) => entry.date === date).length
+                            return { date, count }
+                          })
+
+                          return activityPerDay.some((day) => day.count > 0) ? (
+                            <div className="h-48">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={activityPerDay}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="date" fontSize={12} />
+                                  <YAxis fontSize={12} />
+                                  <Tooltip />
+                                  <Line type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={2} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-center py-8">Geen activiteit in de laatste 7 dagen</p>
+                          )
+                        })()}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Alle lijsten in een grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
