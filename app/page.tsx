@@ -1802,7 +1802,10 @@ export default function ProductRegistrationApp() {
                                   <span className="text-gray-500"> gebruikte </span>
                                   <span className="font-medium">{entry.product}</span>
                                 </div>
-                                <span className="text-gray-500">{entry.time}</span>
+                                <div className="text-right text-gray-500">
+                                  <div className="text-xs">{entry.date}</div>
+                                  <div className="font-medium">{entry.time}</div>
+                                </div>
                               </div>
                             ))
                           )}
