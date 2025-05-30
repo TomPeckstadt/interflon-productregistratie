@@ -1822,10 +1822,8 @@ export default function ProductRegistrationApp() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <div className="flex items-center mr-4">
-                <div className="w-8 h-8 bg-red-600 rounded mr-2 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">I</span>
-                </div>
+              <div className="flex items-center mr-6">
+                <img src="/images/interflon-logo.jpg" alt="Interflon Logo" className="w-10 h-10 mr-3" />
                 <div className="text-lg font-bold text-gray-700">INTERFLON</div>
               </div>
               <p className="text-sm text-gray-600">
@@ -1833,13 +1831,13 @@ export default function ProductRegistrationApp() {
               </p>
             </div>
             <div className="flex items-center gap-6">
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+              <a href="#" className="text-sm text-gray-500 hover:text-red-600">
                 Privacy
               </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+              <a href="#" className="text-sm text-gray-500 hover:text-red-600">
                 Voorwaarden
               </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
+              <a href="#" className="text-sm text-gray-500 hover:text-red-600">
                 Contact
               </a>
             </div>
