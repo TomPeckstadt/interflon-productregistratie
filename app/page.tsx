@@ -1823,13 +1823,17 @@ export default function ProductRegistrationApp() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
               <div className="flex items-center mr-6">
-                {/* Vervang de CSS logo met het echte logo */}
-                <img
-                  src="/images/interflon-logo-official.jpg"
-                  alt="Interflon Logo"
-                  className="h-12 w-auto mr-3 object-contain bg-white rounded-sm p-1 border border-gray-100"
-                  style={{ backgroundColor: "white", mixBlendMode: "multiply" }}
-                />
+                {/* CSS-gebaseerd Interflon logo */}
+                <div className="flex items-center mr-3">
+                  <div className="relative w-10 h-10 mr-2">
+                    {/* Hoofdcirkel */}
+                    <div className="w-10 h-10 border-4 border-red-500 rounded-full relative">
+                      {/* Kleine cirkel linksboven */}
+                      <div className="absolute -top-1 -left-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold text-red-500 tracking-wide">INTERFLON</div>
+                </div>
               </div>
               <p className="text-sm text-gray-600">
                 © {new Date().getFullYear()} INTERFLON. Alle rechten voorbehouden.
