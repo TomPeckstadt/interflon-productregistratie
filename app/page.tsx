@@ -32,6 +32,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Download, Search, X, QrCode, FileText, Plus, Trash2, Users, Package } from "lucide-react"
 
 export default function ProductRegistrationApp() {
   const [currentUser, setCurrentUser] = useState("")
@@ -769,6 +773,58 @@ export default function ProductRegistrationApp() {
     setSortOrder("desc")
   }
 
+  // Statistieken berekenen
+  const calculateStatistics = () => {
+    // Totalen
+    const totalRegistrations = entries.length
+    const uniqueUsers = new Set(entries.map((entry) => entry.user)).size
+    const uniqueProducts = new Set(entries.map((entry) => entry.product)).size
+
+    // Top gebruikers
+    const userCounts: Record<string, number> = {}
+    entries.forEach((entry) => {
+      userCounts[entry.user] = (userCounts[entry.user] || 0) + 1
+    })
+    const topUsers = Object.entries(userCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+
+    // Top producten
+    const productCounts: Record<string, number> = {}
+    entries.forEach((entry) => {
+      productCounts[entry.product] = (productCounts[entry.product] || 0) + 1
+    })
+    const topProducts = Object.entries(productCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+
+    // Top locaties
+    const locationCounts: Record<string, number> = {}
+    entries.forEach((entry) => {
+      locationCounts[entry.location] = (locationCounts[entry.location] || 0) + 1
+    })
+    const topLocations = Object.entries(locationCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+
+    // Recente activiteit
+    const recentActivity = [...entries].sort((a, b) => {
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    }).slice(0, 10)
+
+    return {
+      totalRegistrations,
+      uniqueUsers,
+      uniqueProducts,
+      topUsers,
+      topProducts,
+      topLocations,
+      recentActivity,
+    }
+  }
+
+  const stats = calculateStatistics()
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1007,43 +1063,360 @@ export default function ProductRegistrationApp() {
             </Card>
           </TabsContent>
 
-          {/* Voeg hier alle andere TabsContent secties toe voor history, users, products, locations, purposes, statistics */}
-          {/* ... (alle andere tabs zoals in de originele versie) ... */}
-        </Tabs>
-      </div>
+          <TabsContent value="history">
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">📋 Registratie Geschiedenis</CardTitle>
+                <CardDescription>Bekijk en filter alle product registraties</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  {/* Zoek en filter sectie */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="search" className="text-sm font-medium mb-1 block">
+                          Zoeken
+                        </Label>
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                          <Input
+                            id="search"
+                            type="text"
+                            placeholder="Zoek op naam, product, locatie..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-8"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-full sm:w-48">
+                        <Label htmlFor="filterUser" className="text-sm font-medium mb-1 block">
+                          Gebruiker
+                        </Label>
+                        <Select value={filterUser} onValueChange={setFilterUser}>
+                          <SelectTrigger id="filterUser">
+                            <SelectValue placeholder="Alle gebruikers" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Alle gebruikers</SelectItem>
+                            {users.map((user) => (
+                              <SelectItem key={user} value={user}>
+                                {user}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-full sm:w-48">
+                        <Label htmlFor="filterLocation" className="text-sm font-medium mb-1 block">
+                          Locatie
+                        </Label>
+                        <Select value={filterLocation} onValueChange={setFilterLocation}>
+                          <SelectTrigger id="filterLocation">
+                            <SelectValue placeholder="Alle locaties" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Alle locaties</SelectItem>
+                            {locations.map((loc) => (
+                              <SelectItem key={loc} value={loc}>
+                                {loc}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-      {/* Footer */}
-      <footer className="mt-12 border-t border-gray-200 bg-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            {/* Footer logo */}
-            <div className="flex items-center mb-4 md:mb-0">
-              <div className="flex items-center mr-4">
-                <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Logo%20FB%20transparant.jpg-JHmdbCgpI0bC4vPXL5gWiWBoMSbPlJ.jpeg"
-                  alt="Interflon Logo"
-                  className="w-8 h-8 mr-2"
-                />
-                <div className="text-lg font-bold text-gray-700">INTERFLON</div>
-              </div>
-              <p className="text-sm text-gray-600">
-                © {new Date().getFullYear()} INTERFLON. Alle rechten voorbehouden.
-              </p>
-            </div>
-            <div className="flex items-center gap-6">
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
-                Privacy
-              </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
-                Voorwaarden
-              </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-amber-600">
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
-  )
-}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="w-full sm:w-48">
+                        <Label htmlFor="dateFrom" className="text-sm font-medium mb-1 block">
+                          Datum vanaf
+                        </Label>
+                        <Input
+                          id="dateFrom"
+                          type="date"
+                          value={filterDateFrom}
+                          onChange={(e) => setFilterDateFrom(e.target.value)}
+                        />
+                      </div>
+                      <div className="w-full sm:w-48">
+                        <Label htmlFor="dateTo" className="text-sm font-medium mb-1 block">
+                          Datum tot
+                        </Label>
+                        <Input
+                          id="dateTo"
+                          type="date"
+                          value={filterDateTo}
+                          onChange={(e) => setFilterDateTo(e.target.value)}
+                        />
+                      </div>
+                      <div className="w-full sm:w-48">
+                        <Label htmlFor="sortBy" className="text-sm font-medium mb-1 block">
+                          Sorteer op
+                        </Label>
+                        <Select value={sortBy} onValueChange={(value) => setSortBy(value as "date" | "user" | "product")}>
+                          <SelectTrigger id="sortBy">
+                            <SelectValue placeholder="Sorteer op" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="date">Datum</SelectItem>
+                            <SelectItem value="user">Gebruiker</SelectItem>
+                            <SelectItem value="product">Product</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-full sm:w-48">
+                        <Label htmlFor="sortOrder" className="text-sm font-medium mb-1 block">
+                          Volgorde
+                        </Label>
+                        <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "asc" | "desc")}>
+                          <SelectTrigger id="sortOrder">
+                            <SelectValue placeholder="Volgorde" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="desc">Nieuwste eerst</SelectItem>
+                            <SelectItem value="asc">Oudste eerst</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <Button variant="outline" onClick={clearAllFilters} className="text-sm">
+                        <X className="mr-1 h-4 w-4" /> Wis filters
+                      </Button>
+                      <Button onClick={exportToCSV} className="bg-green-600 hover:bg-green-700 text-sm">
+                        <Download className="mr-1 h-4 w-4" /> Exporteer naar CSV
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Resultaten tabel */}
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow>
+                          <TableHead className="w-[100px]">Datum</TableHead>
+                          <TableHead className="w-[80px]">Tijd</TableHead>
+                          <TableHead>Gebruiker</TableHead>
+                          <TableHead>Product</TableHead>
+                          <TableHead className="hidden md:table-cell">QR Code</TableHead>
+                          <TableHead>Locatie</TableHead>
+                          <TableHead className="hidden md:table-cell">Doel</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {getFilteredAndSortedEntries().length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                              Geen registraties gevonden met de huidige filters
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          getFilteredAndSortedEntries().map((entry) => (
+                            <TableRow key={entry.id}>
+                              <TableCell className="font-medium">{entry.date}</TableCell>
+                              <TableCell>{entry.time}</TableCell>
+                              <TableCell>{entry.user}</TableCell>
+                              <TableCell>{entry.product}</TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {entry.qrcode ? (
+                                  <Badge variant="outline" className="font-mono text-xs">
+                                    {entry.qrcode}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
+                              </TableCell>
+                              <TableCell>{entry.location}</TableCell>
+                              <TableCell className="hidden md:table-cell">{entry.purpose}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Users className="h-5 w-5" /> Gebruikers Beheren
+                </CardTitle>
+                <CardDescription>Voeg nieuwe gebruikers toe of verwijder bestaande gebruikers</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  {/* Nieuwe gebruiker toevoegen */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Nieuwe gebruiker toevoegen</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="newUserName" className="sr-only">
+                          Naam
+                        </Label>
+                        <Input
+                          id="newUserName"
+                          placeholder="Voer naam in..."
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={addNewUser} className="bg-amber-600 hover:bg-amber-700">
+                        <Plus className="mr-1 h-4 w-4" /> Toevoegen
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Import/Export sectie */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="userImport" className="block text-sm font-medium mb-1">
+                          Importeer gebruikers (CSV of TXT)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="userImport"
+                            type="file"
+                            accept=".csv,.txt"
+                            ref={userFileInputRef}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileImport(e.target.files[0], "users")
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={() => exportTemplate("users")}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            <FileText className="mr-1 h-4 w-4" /> Template
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gebruikers lijst */}
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow>
+                          <TableHead>Naam</TableHead>
+                          <TableHead className="w-[100px] text-right">Acties</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center py-8 text-gray-500">
+                              Geen gebruikers gevonden
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          users.map((user) => (
+                            <TableRow key={user}>
+                              <TableCell className="font-medium">{user}</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  onClick={() => removeUser(user)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Verwijder {user}</span>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="products">
+            <Card className="shadow-sm">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Package className="h-5 w-5" /> Producten Beheren
+                </CardTitle>
+                <CardDescription>Voeg nieuwe producten toe of verwijder bestaande producten</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  {/* Nieuw product toevoegen */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Nieuw product toevoegen</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="newProductName" className="block text-sm font-medium mb-1">
+                          Productnaam
+                        </Label>
+                        <Input
+                          id="newProductName"
+                          placeholder="Voer productnaam in..."
+                          value={newProductName}
+                          onChange={(e) => setNewProductName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="newProductQrCode" className="block text-sm font-medium mb-1">
+                          QR Code (optioneel)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="newProductQrCode"
+                            placeholder="QR Code..."
+                            value={newProductQrCode}
+                            onChange={(e) => setNewProductQrCode(e.target.value)}
+                          />
+                          <Button
+                            onClick={() => {
+                              setQrScanMode("product-management")
+                              startQrScanner()
+                            }}
+                            variant="outline"
+                            className="px-2"
+                            disabled={showQrScanner}
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="sm:col-span-3">
+                        <Button onClick={addNewProduct} className="bg-amber-600 hover:bg-amber-700">
+                          <Plus className="mr-1 h-4 w-4" /> Product Toevoegen
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Import/Export sectie */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <Label htmlFor="productImport" className="block text-sm font-medium mb-1">
+                          Importeer producten (CSV formaat: Naam,QRCode)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="productImport"
+                            type="file"
+                            accept=".csv"
+                            ref={productFileInputRef}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0])\
