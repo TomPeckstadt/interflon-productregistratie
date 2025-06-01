@@ -244,8 +244,13 @@ export default function ProductRegistrationApp() {
 
   const startQrScanner = async () => {
     try {
+      // Vraag camera toegang met betere instellingen voor mobiel
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: {
+          facingMode: "environment", // Gebruik achtercamera
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       })
       setCameraStream(stream)
 
@@ -255,13 +260,16 @@ export default function ProductRegistrationApp() {
       }
 
       setShowQrScanner(true)
-
-      setTimeout(() => {
-        scanQrCode()
-      }, 1000)
     } catch (error) {
       console.error("Camera toegang geweigerd:", error)
-      setImportError("Camera toegang is vereist voor QR code scanning")
+
+      // Fallback: vraag handmatige invoer
+      const manualQrCode = prompt("Camera niet beschikbaar. Voer QR code handmatig in:")
+      if (manualQrCode) {
+        handleQrCodeDetected(manualQrCode)
+      } else {
+        setImportError("Camera toegang is vereist voor QR code scanning, of voer QR code handmatig in")
+      }
     }
   }
 
@@ -274,25 +282,15 @@ export default function ProductRegistrationApp() {
   }
 
   const scanQrCode = () => {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    const context = canvas.getContext("2d")
-
-    if (!context) return
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-    const qrInput = prompt("Scan QR code of voer QR code handmatig in:")
+    // Eenvoudige fallback: vraag direct om handmatige invoer
+    const qrInput = prompt("Voer QR code in:")
 
     if (qrInput) {
       handleQrCodeDetected(qrInput)
-    } else if (showQrScanner) {
-      setTimeout(scanQrCode, 1000)
     }
+
+    // Stop de scanner na invoer
+    stopQrScanner()
   }
 
   const handleQrCodeDetected = (qrCode: string) => {
