@@ -246,9 +246,13 @@ export default function ProductRegistrationApp() {
     try {
       console.log("Starting QR scanner...")
 
+      // Toon eerst de modal
+      setShowQrScanner(true)
+
       // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Camera not supported")
+        console.log("Camera not supported, showing manual input")
+        return
       }
 
       // Request camera access
@@ -262,7 +266,6 @@ export default function ProductRegistrationApp() {
 
       console.log("Camera stream obtained:", stream)
       setCameraStream(stream)
-      setShowQrScanner(true)
 
       // Wait for video element to be available
       setTimeout(() => {
@@ -274,12 +277,7 @@ export default function ProductRegistrationApp() {
       }, 100)
     } catch (error) {
       console.error("Camera error:", error)
-
-      // Direct fallback to manual input
-      const manualQrCode = prompt("Camera niet beschikbaar. Voer QR code handmatig in:")
-      if (manualQrCode && manualQrCode.trim()) {
-        handleQrCodeDetected(manualQrCode.trim())
-      }
+      // Modal is already open, just show manual input option
     }
   }
 
