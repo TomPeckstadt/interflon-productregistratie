@@ -30,7 +30,8 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     if (authError) {
       setError("Ongeldige inloggegevens")
     } else if (data.user) {
-      onLogin()
+      // Gebruik window.location.href voor een harde redirect
+      window.location.href = "/"
     }
 
     setIsLoading(false)
