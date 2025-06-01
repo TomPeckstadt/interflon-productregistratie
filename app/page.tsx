@@ -244,31 +244,41 @@ export default function ProductRegistrationApp() {
 
   const startQrScanner = async () => {
     try {
-      // Vraag camera toegang met betere instellingen voor mobiel
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment", // Gebruik achtercamera
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      })
-      setCameraStream(stream)
+      console.log("Starting QR scanner...")
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.play()
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera not supported")
       }
 
-      setShowQrScanner(true)
-    } catch (error) {
-      console.error("Camera toegang geweigerd:", error)
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
+      })
 
-      // Fallback: vraag handmatige invoer
+      console.log("Camera stream obtained:", stream)
+      setCameraStream(stream)
+      setShowQrScanner(true)
+
+      // Wait for video element to be available
+      setTimeout(() => {
+        if (videoRef.current && stream) {
+          console.log("Setting video source...")
+          videoRef.current.srcObject = stream
+          videoRef.current.play().catch(console.error)
+        }
+      }, 100)
+    } catch (error) {
+      console.error("Camera error:", error)
+
+      // Direct fallback to manual input
       const manualQrCode = prompt("Camera niet beschikbaar. Voer QR code handmatig in:")
-      if (manualQrCode) {
-        handleQrCodeDetected(manualQrCode)
-      } else {
-        setImportError("Camera toegang is vereist voor QR code scanning, of voer QR code handmatig in")
+      if (manualQrCode && manualQrCode.trim()) {
+        handleQrCodeDetected(manualQrCode.trim())
       }
     }
   }
@@ -282,14 +292,10 @@ export default function ProductRegistrationApp() {
   }
 
   const scanQrCode = () => {
-    // Eenvoudige fallback: vraag direct om handmatige invoer
     const qrInput = prompt("Voer QR code in:")
-
-    if (qrInput) {
-      handleQrCodeDetected(qrInput)
+    if (qrInput && qrInput.trim()) {
+      handleQrCodeDetected(qrInput.trim())
     }
-
-    // Stop de scanner na invoer
     stopQrScanner()
   }
 
