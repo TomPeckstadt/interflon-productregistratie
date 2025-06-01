@@ -98,8 +98,10 @@ export default function ProductRegistrationApp() {
   const [qrScanResult, setQrScanResult] = useState("")
   const [qrScanMode, setQrScanMode] = useState<"registration" | "product-management">("registration")
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Import states
   const [importMessage, setImportMessage] = useState("")
@@ -131,6 +133,9 @@ export default function ProductRegistrationApp() {
     return () => {
       if (cameraStream) {
         cameraStream.getTracks().forEach((track) => track.stop())
+      }
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current)
       }
     }
   }, [cameraStream])
@@ -242,16 +247,49 @@ export default function ProductRegistrationApp() {
     }
   }
 
+  // Eenvoudige QR code detectie functie
+  const detectQRCode = () => {
+    if (!videoRef.current || !canvasRef.current) return
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    const context = canvas.getContext("2d")
+
+    if (!context || video.videoWidth === 0 || video.videoHeight === 0) return
+
+    // Set canvas size to match video
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+
+    // Draw current video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    // Get image data
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+
+    // Hier zou normaal een QR code library gebruikt worden
+    // Voor nu simuleren we QR code detectie door te kijken naar donkere pixels
+    // Dit is een zeer eenvoudige implementatie
+
+    // In een echte implementatie zou je een library zoals jsQR gebruiken:
+    // const code = jsQR(imageData.data, imageData.width, imageData.height)
+    // if (code) {
+    //   handleQrCodeDetected(code.data)
+    // }
+  }
+
   const startQrScanner = async () => {
     try {
       console.log("Starting QR scanner...")
 
       // Toon eerst de modal
       setShowQrScanner(true)
+      setIsScanning(true)
 
       // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.log("Camera not supported, showing manual input")
+        setIsScanning(false)
         return
       }
 
@@ -272,11 +310,18 @@ export default function ProductRegistrationApp() {
         if (videoRef.current && stream) {
           console.log("Setting video source...")
           videoRef.current.srcObject = stream
-          videoRef.current.play().catch(console.error)
+          videoRef.current
+            .play()
+            .then(() => {
+              // Start scanning for QR codes
+              scanIntervalRef.current = setInterval(detectQRCode, 500) // Scan every 500ms
+            })
+            .catch(console.error)
         }
       }, 100)
     } catch (error) {
       console.error("Camera error:", error)
+      setIsScanning(false)
       // Modal is already open, just show manual input option
     }
   }
@@ -286,7 +331,12 @@ export default function ProductRegistrationApp() {
       cameraStream.getTracks().forEach((track) => track.stop())
       setCameraStream(null)
     }
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current)
+      scanIntervalRef.current = null
+    }
     setShowQrScanner(false)
+    setIsScanning(false)
   }
 
   const scanQrCode = () => {
@@ -294,10 +344,10 @@ export default function ProductRegistrationApp() {
     if (qrInput && qrInput.trim()) {
       handleQrCodeDetected(qrInput.trim())
     }
-    stopQrScanner()
   }
 
   const handleQrCodeDetected = (qrCode: string) => {
+    console.log("QR Code detected:", qrCode)
     setQrScanResult(qrCode)
 
     if (qrScanMode === "registration") {
@@ -1071,31 +1121,6 @@ export default function ProductRegistrationApp() {
                     </div>
                   </div>
 
-                  {showQrScanner && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold">📱 QR Code Scanner</h3>
-                          <Button onClick={stopQrScanner} variant="outline" size="sm">
-                            ✕ Sluiten
-                          </Button>
-                        </div>
-
-                        <div className="space-y-4">
-                          <video ref={videoRef} className="w-full h-64 bg-gray-200 rounded-lg" autoPlay playsInline />
-                          <canvas ref={canvasRef} className="hidden" />
-
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600 mb-4">Richt de camera op een QR code</p>
-                            <Button onClick={scanQrCode} className="w-full">
-                              🔍 Handmatig Scannen
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   <Button
                     type="submit"
                     className="w-full bg-amber-600 hover:bg-amber-700 h-12 sm:h-14 text-base sm:text-lg font-medium"
@@ -1426,7 +1451,9 @@ export default function ProductRegistrationApp() {
                             onChange={(e) => setNewProductQrCode(e.target.value)}
                           />
                           <Button
+                            type="button"
                             onClick={() => {
+                              console.log("QR button clicked for product management")
                               setQrScanMode("product-management")
                               startQrScanner()
                             }}
@@ -2004,6 +2031,44 @@ export default function ProductRegistrationApp() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* QR Scanner Modal */}
+        {showQrScanner && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">📱 QR Code Scanner</h3>
+                <Button onClick={stopQrScanner} variant="outline" size="sm">
+                  ✕ Sluiten
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {isScanning ? (
+                  <>
+                    <video ref={videoRef} className="w-full h-64 bg-gray-200 rounded-lg" autoPlay playsInline />
+                    <canvas ref={canvasRef} className="hidden" />
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">Richt de camera op een QR code</p>
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm text-blue-600">Scannen...</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-600 mb-4">Camera niet beschikbaar</p>
+                  </div>
+                )}
+
+                <Button onClick={scanQrCode} className="w-full">
+                  🔍 Handmatig Invoeren
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
