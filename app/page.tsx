@@ -65,6 +65,9 @@ import {
   Line,
 } from "recharts"
 
+import { getCurrentUser, onAuthStateChange, signOut } from "@/lib/auth"
+import { LoginForm } from "@/components/login-form"
+
 export default function ProductRegistrationApp() {
   const [currentUser, setCurrentUser] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("")
@@ -73,6 +76,9 @@ export default function ProductRegistrationApp() {
   const [entries, setEntries] = useState<RegistrationEntry[]>([])
   const [showSuccess, setShowSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  const [user, setUser] = useState<any>(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
 
   // Beheer states
   const [users, setUsers] = useState<string[]>([])
@@ -128,6 +134,26 @@ export default function ProductRegistrationApp() {
       }
     }
   }, [cameraStream])
+
+  // Authentication check
+  useEffect(() => {
+    const checkUser = async () => {
+      const currentUser = await getCurrentUser()
+      setUser(currentUser)
+      setIsAuthLoading(false)
+    }
+
+    checkUser()
+
+    const {
+      data: { subscription },
+    } = onAuthStateChange((user) => {
+      setUser(user)
+      setIsAuthLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const loadAllData = async () => {
     try {
@@ -812,11 +838,34 @@ export default function ProductRegistrationApp() {
     }
   }
 
+  const handleLogout = async () => {
+    await signOut()
+    setUser(null)
+  }
+
   const stats = calculateStatistics()
 
+  // Show loading while checking authentication
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Laden...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login form if not authenticated
+  if (!user) {
+    return <LoginForm onLogin={() => setUser(user)} />
+  }
+
+  // Show main app if authenticated
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header with logout button */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6">
@@ -856,11 +905,23 @@ export default function ProductRegistrationApp() {
                 </span>
               </div>
               <div className="hidden md:block">{entries.length} registraties</div>
+              <div className="flex items-center gap-2">
+                <span>Ingelogd als: {user.email}</span>
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Uitloggen
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Rest of your existing app content */}
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {showSuccess && (
           <Alert className="mb-6 border-green-200 bg-green-50">
@@ -1957,8 +2018,8 @@ export default function ProductRegistrationApp() {
                       {/* Kleine cirkel linksboven */}
                       <div className="absolute -top-1 -left-1 w-3 h-3 bg-red-500 rounded-full"></div>
                     </div>
+                    <div className="text-lg font-bold text-red-500 tracking-wide">INTERFLON</div>
                   </div>
-                  <div className="text-lg font-bold text-red-500 tracking-wide">INTERFLON</div>
                 </div>
               </div>
               <p className="text-sm text-gray-600">

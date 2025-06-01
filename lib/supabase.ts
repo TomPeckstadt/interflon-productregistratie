@@ -108,7 +108,6 @@ export async function saveProduct(product: Product) {
   return { data: data?.[0] || null, error: null }
 }
 
-// Wijzig de deleteProduct functie om meer debug informatie te tonen:
 export async function deleteProduct(id: string) {
   debugLog("deleteProduct aangeroepen met ID:", id)
   const supabase = getSupabaseClient()
@@ -141,7 +140,6 @@ export async function fetchUsers() {
   return { data: data?.map((user) => user.name) || [], error: null }
 }
 
-// Wijzig de saveUser functie om meer debug informatie te tonen:
 export async function saveUser(name: string) {
   debugLog("saveUser aangeroepen met:", name)
   const supabase = getSupabaseClient()
@@ -280,7 +278,6 @@ export async function saveRegistration(registration: Omit<RegistrationEntry, "id
   return { data: data?.[0] || null, error: null }
 }
 
-// Wijzig de subscribeToUsers functie als volgt:
 export function subscribeToUsers(callback: (users: string[]) => void) {
   debugLog("Setting up users subscription")
   const supabase = getSupabaseClient()
@@ -316,7 +313,6 @@ export function subscribeToUsers(callback: (users: string[]) => void) {
   }
 }
 
-// Wijzig de subscribeToProducts functie op dezelfde manier:
 export function subscribeToProducts(callback: (products: Product[]) => void) {
   debugLog("Setting up products subscription")
   const supabase = getSupabaseClient()
@@ -351,7 +347,6 @@ export function subscribeToProducts(callback: (products: Product[]) => void) {
   }
 }
 
-// Wijzig de subscribeToLocations functie op dezelfde manier:
 export function subscribeToLocations(callback: (locations: string[]) => void) {
   debugLog("Setting up locations subscription")
   const supabase = getSupabaseClient()
@@ -387,7 +382,6 @@ export function subscribeToLocations(callback: (locations: string[]) => void) {
   }
 }
 
-// Wijzig de subscribeToPurposes functie op dezelfde manier:
 export function subscribeToPurposes(callback: (purposes: string[]) => void) {
   debugLog("Setting up purposes subscription")
   const supabase = getSupabaseClient()
