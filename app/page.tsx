@@ -104,7 +104,7 @@ export default function ProductRegistrationApp() {
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Import states
-  const [importMessage, setImportMessage] = useState("")
+  const [importMessage, setImportMessage] = useState("") 
   const [importError, setImportError] = useState("")
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "error">("connecting")
   const userFileInputRef = useRef<HTMLInputElement>(null)
