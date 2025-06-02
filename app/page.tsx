@@ -69,6 +69,11 @@ import { getCurrentUser, onAuthStateChange, signOut } from "@/lib/auth"
 import { LoginForm } from "@/components/login-form"
 
 export default function ProductRegistrationApp() {
+  // Fix JWT error
+if (typeof window !== 'undefined') {
+  localStorage.removeItem('supabase.auth.token')
+  sessionStorage.clear()
+}
   const [currentUser, setCurrentUser] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("")
   const [location, setLocation] = useState("")
