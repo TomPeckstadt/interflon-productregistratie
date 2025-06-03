@@ -448,7 +448,7 @@ export async function fetchCategories() {
 
     if (error) {
       // Check if the error is because the table doesn't exist
-      if (error.message.includes('relation "public.categories" does not exist')) {
+      if (error.message && error.message.includes('relation "public.categories" does not exist')) {
         console.warn("Categories table doesn't exist yet. Please run the SQL script to create it.")
         return { data: [], error: null }
       }
@@ -470,7 +470,7 @@ export async function saveCategory(category: Omit<ProductCategory, "id" | "creat
     const { data, error } = await supabase.from("categories").insert([category]).select()
 
     if (error) {
-      if (error.message.includes('relation "public.categories" does not exist')) {
+      if (error.message && error.message.includes('relation "public.categories" does not exist')) {
         return { data: null, error: { message: "Categories table doesn't exist. Please run the SQL script first." } }
       }
       console.error("Error saving category:", error)
@@ -491,7 +491,7 @@ export async function updateCategory(id: string, category: Partial<ProductCatego
     const { data, error } = await supabase.from("categories").update(category).eq("id", id).select()
 
     if (error) {
-      if (error.message.includes('relation "public.categories" does not exist')) {
+      if (error.message && error.message.includes('relation "public.categories" does not exist')) {
         return { data: null, error: { message: "Categories table doesn't exist. Please run the SQL script first." } }
       }
       console.error("Error updating category:", error)
@@ -512,7 +512,7 @@ export async function deleteCategory(id: string) {
     const { error } = await supabase.from("categories").delete().eq("id", id)
 
     if (error) {
-      if (error.message.includes('relation "public.categories" does not exist')) {
+      if (error.message && error.message.includes('relation "public.categories" does not exist')) {
         return {
           success: false,
           error: { message: "Categories table doesn't exist. Please run the SQL script first." },
@@ -546,7 +546,7 @@ export function subscribeToCategories(callback: (categories: ProductCategory[]) 
             .order("created_at", { ascending: false })
 
           if (error) {
-            if (error.message.includes('relation "public.categories" does not exist')) {
+            if (error.message && error.message.includes('relation "public.categories" does not exist')) {
               console.warn("Categories table doesn't exist yet for subscription.")
               callback([])
               return
