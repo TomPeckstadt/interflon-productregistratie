@@ -73,6 +73,7 @@ export function CategoryManagement({
       resetForm()
       setShowAddDialog(false)
     } catch (error) {
+      console.error("Error in handleAddCategory:", error)
       setShowSetupMessage(true)
       setTimeout(() => setShowSetupMessage(false), 5000)
     }

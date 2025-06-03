@@ -820,13 +820,17 @@ export default function ProductRegistrationApp() {
     try {
       const result = await saveCategory(categoryData)
       if (result.error) {
-        setImportError(`Fout bij toevoegen categorie: ${result.error.message}`)
+        const errorMessage = result.error.message || "Onbekende fout bij toevoegen categorie"
+        setImportError(`Fout bij toevoegen categorie: ${errorMessage}`)
+        setTimeout(() => setImportError(""), 5000)
       } else {
         setImportMessage("✅ Categorie toegevoegd!")
         setTimeout(() => setImportMessage(""), 2000)
       }
     } catch (error) {
-      setImportError("Fout bij toevoegen categorie")
+      const errorMessage = error instanceof Error ? error.message : "Onbekende fout"
+      setImportError(`Fout bij toevoegen categorie: ${errorMessage}`)
+      setTimeout(() => setImportError(""), 5000)
     }
   }
 
@@ -834,13 +838,17 @@ export default function ProductRegistrationApp() {
     try {
       const result = await updateCategory(id, categoryData)
       if (result.error) {
-        setImportError(`Fout bij bijwerken categorie: ${result.error.message}`)
+        const errorMessage = result.error.message || "Onbekende fout bij bijwerken categorie"
+        setImportError(`Fout bij bijwerken categorie: ${errorMessage}`)
+        setTimeout(() => setImportError(""), 5000)
       } else {
         setImportMessage("✅ Categorie bijgewerkt!")
         setTimeout(() => setImportMessage(""), 2000)
       }
     } catch (error) {
-      setImportError("Fout bij bijwerken categorie")
+      const errorMessage = error instanceof Error ? error.message : "Onbekende fout"
+      setImportError(`Fout bij bijwerken categorie: ${errorMessage}`)
+      setTimeout(() => setImportError(""), 5000)
     }
   }
 
@@ -848,13 +856,17 @@ export default function ProductRegistrationApp() {
     try {
       const result = await deleteCategory(id)
       if (result.error) {
-        setImportError(`Fout bij verwijderen categorie: ${result.error.message}`)
+        const errorMessage = result.error.message || "Onbekende fout bij verwijderen categorie"
+        setImportError(`Fout bij verwijderen categorie: ${errorMessage}`)
+        setTimeout(() => setImportError(""), 5000)
       } else {
         setImportMessage("✅ Categorie verwijderd!")
         setTimeout(() => setImportMessage(""), 2000)
       }
     } catch (error) {
-      setImportError("Fout bij verwijderen categorie")
+      const errorMessage = error instanceof Error ? error.message : "Onbekende fout"
+      setImportError(`Fout bij verwijderen categorie: ${errorMessage}`)
+      setTimeout(() => setImportError(""), 5000)
     }
   }
 
