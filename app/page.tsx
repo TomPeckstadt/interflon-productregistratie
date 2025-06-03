@@ -22,7 +22,6 @@ import {
   subscribeToLocations,
   subscribeToPurposes,
   subscribeToRegistrations,
-  fetchProductsWithCategories,
   type Product,
   type RegistrationEntry,
   fetchProducts,
@@ -241,29 +240,42 @@ export default function ProductRegistrationApp() {
         setCategories([])
       }
 
+      // Vervang deze sectie in loadAllData:
       // Then load products with categories
+      // try {
+      //   const productsResult = await fetchProductsWithCategories()
+      //   if (productsResult.data) {
+      //     setProducts(productsResult.data)
+      //   } else {
+      //     // Fallback to regular products if categories don't work
+      //     const fallbackResult = await fetchProducts()
+      //     if (fallbackResult.data) {
+      //       setProducts(fallbackResult.data)
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.warn("Could not load products with categories, trying fallback:", error)
+      //   try {
+      //     const fallbackResult = await fetchProducts()
+      //     if (fallbackResult.data) {
+      //       setProducts(fallbackResult.data)
+      //     }
+      //   } catch (fallbackError) {
+      //     console.error("Could not load products at all:", fallbackError)
+      //     setProducts([])
+      //   }
+      // }
+
+      // Met deze eenvoudigere versie:
+      // Load products (start with basic products, categories come later)
       try {
-        const productsResult = await fetchProductsWithCategories()
+        const productsResult = await fetchProducts()
         if (productsResult.data) {
           setProducts(productsResult.data)
-        } else {
-          // Fallback to regular products if categories don't work
-          const fallbackResult = await fetchProducts()
-          if (fallbackResult.data) {
-            setProducts(fallbackResult.data)
-          }
         }
       } catch (error) {
-        console.warn("Could not load products with categories, trying fallback:", error)
-        try {
-          const fallbackResult = await fetchProducts()
-          if (fallbackResult.data) {
-            setProducts(fallbackResult.data)
-          }
-        } catch (fallbackError) {
-          console.error("Could not load products at all:", fallbackError)
-          setProducts([])
-        }
+        console.error("Could not load products:", error)
+        setProducts([])
       }
 
       setConnectionStatus("connected")
@@ -280,20 +292,27 @@ export default function ProductRegistrationApp() {
     console.log("Setting up realtime subscriptions...")
 
     try {
-      const unsubscribeProducts = subscribeToProducts(async (updatedProducts) => {
+      // Vervang:
+      // const unsubscribeProducts = subscribeToProducts(async (updatedProducts) => {
+      //   console.log("Products subscription update received:", updatedProducts.length)
+      //   // Try to reload products with categories, fallback to regular products
+      //   try {
+      //     const result = await fetchProductsWithCategories()
+      //     if (result.data) {
+      //       setProducts(result.data)
+      //     } else {
+      //       setProducts(updatedProducts)
+      //     }
+      //   } catch (error) {
+      //     console.warn("Error reloading products with categories:", error)
+      //     setProducts(updatedProducts)
+      //   }
+      // })
+
+      // Met:
+      const unsubscribeProducts = subscribeToProducts((updatedProducts) => {
         console.log("Products subscription update received:", updatedProducts.length)
-        // Try to reload products with categories, fallback to regular products
-        try {
-          const result = await fetchProductsWithCategories()
-          if (result.data) {
-            setProducts(result.data)
-          } else {
-            setProducts(updatedProducts)
-          }
-        } catch (error) {
-          console.warn("Error reloading products with categories:", error)
-          setProducts(updatedProducts)
-        }
+        setProducts(updatedProducts)
       })
 
       const unsubscribeUsers = subscribeToUsers((updatedUsers) => {
@@ -721,8 +740,16 @@ export default function ProductRegistrationApp() {
             console.error("Fout bij toevoegen product:", result.error)
             setImportError(`Fout bij toevoegen product: ${result.error.message || "Onbekende fout"}`)
           } else {
+            // Vervang:
             // Reload products with categories
-            const updatedProducts = await fetchProductsWithCategories()
+            // const updatedProducts = await fetchProductsWithCategories()
+            // if (updatedProducts.data) {
+            //   setProducts(updatedProducts.data)
+            // }
+
+            // Met:
+            // Reload products
+            const updatedProducts = await fetchProducts()
             if (updatedProducts.data) {
               setProducts(updatedProducts.data)
             }
@@ -762,8 +789,16 @@ export default function ProductRegistrationApp() {
       if (result.error) {
         setImportError(`Fout bij bijwerken product: ${result.error.message || "Onbekende fout"}`)
       } else {
+        // Vervang:
         // Reload products with categories
-        const updatedProducts = await fetchProductsWithCategories()
+        // const updatedProducts = await fetchProductsWithCategories()
+        // if (updatedProducts.data) {
+        //   setProducts(updatedProducts.data)
+        // }
+
+        // Met:
+        // Reload products
+        const updatedProducts = await fetchProducts()
         if (updatedProducts.data) {
           setProducts(updatedProducts.data)
         }
@@ -1031,12 +1066,13 @@ export default function ProductRegistrationApp() {
         product.name.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
         (product.qrcode && product.qrcode.toLowerCase().includes(productSearchQuery.toLowerCase()))
 
-      const categoryMatch =
-        productCategoryFilter === "all" ||
-        product.category_id === productCategoryFilter ||
-        (!product.category_id && productCategoryFilter === "none")
+      // const categoryMatch =
+      //   productCategoryFilter === "all" ||
+      //   product.category_id === productCategoryFilter ||
+      //   (!product.category_id && productCategoryFilter === "none")
 
-      return searchMatch && categoryMatch
+      // return searchMatch && categoryMatch
+      return searchMatch
     })
   }
 
@@ -1274,16 +1310,22 @@ export default function ProductRegistrationApp() {
                           </SelectTrigger>
                           <SelectContent>
                             {products.map((product) => (
+                              // Vervang:
+                              // <SelectItem key={product.id} value={product.name}>
+                              //   <div className="flex items-center gap-2">
+                              //     {product.category && (
+                              //       <div
+                              //         className="w-3 h-3 rounded-full"
+                              //         style={{ backgroundColor: product.category.color }}
+                              //       />
+                              //     )}
+                              //     {product.name} {product.qrcode && `(${product.qrcode})`}
+                              //   </div>
+                              // </SelectItem>
+
+                              // Met:
                               <SelectItem key={product.id} value={product.name}>
-                                <div className="flex items-center gap-2">
-                                  {product.category && (
-                                    <div
-                                      className="w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: product.category.color }}
-                                    />
-                                  )}
-                                  {product.name} {product.qrcode && `(${product.qrcode})`}
-                                </div>
+                                {product.name} {product.qrcode && `(${product.qrcode})`}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1691,27 +1733,17 @@ export default function ProductRegistrationApp() {
                               </Button>
                             </div>
                           </div>
+                          // Vervang de category selection div met:
                           <div>
                             <Label htmlFor="newProductCategory" className="block text-sm font-medium mb-1">
                               Categorie
                             </Label>
-                            <Select value={newProductCategoryId} onValueChange={setNewProductCategoryId}>
+                            <Select value="" onValueChange={() => {}}>
                               <SelectTrigger id="newProductCategory">
-                                <SelectValue placeholder="Selecteer categorie" />
+                                <SelectValue placeholder="Binnenkort beschikbaar" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Geen categorie</SelectItem>
-                                {categories.map((category) => (
-                                  <SelectItem key={category.id} value={category.id!}>
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: category.color }}
-                                      />
-                                      {category.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
+                                <SelectItem value="">Binnenkort beschikbaar</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1742,28 +1774,17 @@ export default function ProductRegistrationApp() {
                               />
                             </div>
                           </div>
+                          // Vervang de hele category filter sectie met:
                           <div className="w-full sm:w-48">
                             <Label htmlFor="categoryFilter" className="block text-sm font-medium mb-1">
                               Categorie
                             </Label>
-                            <Select value={productCategoryFilter} onValueChange={setProductCategoryFilter}>
+                            <Select value="all" onValueChange={() => {}}>
                               <SelectTrigger id="categoryFilter">
                                 <SelectValue placeholder="Alle categorieën" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="all">Alle categorieën</SelectItem>
-                                <SelectItem value="none">Geen categorie</SelectItem>
-                                {categories.map((category) => (
-                                  <SelectItem key={category.id} value={category.id!}>
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: category.color }}
-                                      />
-                                      {category.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -1842,21 +1863,27 @@ export default function ProductRegistrationApp() {
                                       "-"
                                     )}
                                   </TableCell>
+                                  // Vervang:
+                                  // <TableCell>
+                                  //   {product.category ? (
+                                  //     <div className="flex items-center gap-2">
+                                  //       <div
+                                  //         className="w-4 h-4 rounded-full"
+                                  //         style={{ backgroundColor: product.category.color }}
+                                  //       />
+                                  //       <span className="text-sm">{product.category.name}</span>
+                                  //     </div>
+                                  //   ) : (
+                                  //     <span className="text-gray-500 text-sm">Geen categorie</span>
+                                  //   )}
+                                  // </TableCell>
+
+                                  // Met:
                                   <TableCell>
-                                    {product.category ? (
-                                      <div className="flex items-center gap-2">
-                                        <div
-                                          className="w-4 h-4 rounded-full"
-                                          style={{ backgroundColor: product.category.color }}
-                                        />
-                                        <span className="text-sm">{product.category.name}</span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-gray-500 text-sm">Geen categorie</span>
-                                    )}
+                                    <span className="text-gray-500 text-sm">-</span>
                                   </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex gap-1 justify-end">
+                                  <TableCell className="text-right">\
+                                    <div className="flex gap-1 justify-end">\
                                       <Button
                                         onClick={() => handleEditProduct(product)}
                                         variant="ghost"
@@ -2470,9 +2497,7 @@ export default function ProductRegistrationApp() {
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      <footer className="mt-12 border-t border-gray-200 bg-white py-8">
+  <footer className=\"mt-12 border-t border-gray-200 bg-white py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
@@ -2507,6 +2532,6 @@ export default function ProductRegistrationApp() {
           </div>
         </div>
       </footer>
-    </div>
+  </div>
   )
 }
