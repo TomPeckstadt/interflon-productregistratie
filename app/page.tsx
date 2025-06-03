@@ -67,13 +67,22 @@ import {
 
 import { getCurrentUser, onAuthStateChange, signOut } from "@/lib/auth"
 import { LoginForm } from "@/components/login-form"
+import { CategoryManagement } from "@/components/category-management"
+import {
+  fetchCategories,
+  saveCategory,
+  updateCategory,
+  deleteCategory,
+  subscribeToCategories,
+  type ProductCategory,
+} from "@/lib/supabase"
 
 export default function ProductRegistrationApp() {
   // Fix JWT error
-if (typeof window !== 'undefined') {
-  localStorage.removeItem('supabase.auth.token')
-  sessionStorage.clear()
-}
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("supabase.auth.token")
+    sessionStorage.clear()
+  }
   const [currentUser, setCurrentUser] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("")
   const [location, setLocation] = useState("")
@@ -109,7 +118,7 @@ if (typeof window !== 'undefined') {
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Import states
-  const [importMessage, setImportMessage] = useState("") 
+  const [importMessage, setImportMessage] = useState("")
   const [importError, setImportError] = useState("")
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "error">("connecting")
   const userFileInputRef = useRef<HTMLInputElement>(null)
@@ -126,6 +135,9 @@ if (typeof window !== 'undefined') {
   const [filterDateTo, setFilterDateTo] = useState("")
   const [sortBy, setSortBy] = useState<"date" | "user" | "product">("date")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
+  // Categorieën states
+  const [categories, setCategories] = useState<ProductCategory[]>([])
 
   // Laad alle data bij start
   useEffect(() => {
@@ -196,6 +208,9 @@ if (typeof window !== 'undefined') {
       if (purposesResult.data) setPurposes(purposesResult.data)
       if (registrationsResult.data) setEntries(registrationsResult.data)
 
+      const categoriesResult = await fetchCategories()
+      if (categoriesResult.data) setCategories(categoriesResult.data)
+
       setConnectionStatus("connected")
       setImportMessage("✅ Verbonden met database - alle data gesynchroniseerd!")
       setTimeout(() => setImportMessage(""), 3000)
@@ -235,6 +250,11 @@ if (typeof window !== 'undefined') {
         setEntries(updatedRegistrations)
       })
 
+      const unsubscribeCategories = subscribeToCategories((updatedCategories) => {
+        console.log("Categories subscription update received:", updatedCategories.length)
+        setCategories(updatedCategories)
+      })
+
       console.log("All realtime subscriptions set up successfully")
 
       return () => {
@@ -244,6 +264,7 @@ if (typeof window !== 'undefined') {
         if (unsubscribeLocations) unsubscribeLocations.unsubscribe()
         if (unsubscribePurposes) unsubscribePurposes.unsubscribe()
         if (unsubscribeRegistrations) unsubscribeRegistrations.unsubscribe()
+        if (unsubscribeCategories) unsubscribeCategories.unsubscribe()
       }
     } catch (error) {
       console.error("Error setting up realtime subscriptions:", error)
@@ -784,6 +805,48 @@ if (typeof window !== 'undefined') {
     } catch (error) {
       console.error("Fout bij verwijderen doel:", error)
       setImportError("Fout bij verwijderen doel")
+    }
+  }
+
+  const handleAddCategory = async (categoryData: Omit<ProductCategory, "id" | "created_at">) => {
+    try {
+      const result = await saveCategory(categoryData)
+      if (result.error) {
+        setImportError(`Fout bij toevoegen categorie: ${result.error.message}`)
+      } else {
+        setImportMessage("✅ Categorie toegevoegd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
+    } catch (error) {
+      setImportError("Fout bij toevoegen categorie")
+    }
+  }
+
+  const handleUpdateCategory = async (id: string, categoryData: Partial<ProductCategory>) => {
+    try {
+      const result = await updateCategory(id, categoryData)
+      if (result.error) {
+        setImportError(`Fout bij bijwerken categorie: ${result.error.message}`)
+      } else {
+        setImportMessage("✅ Categorie bijgewerkt!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
+    } catch (error) {
+      setImportError("Fout bij bijwerken categorie")
+    }
+  }
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const result = await deleteCategory(id)
+      if (result.error) {
+        setImportError(`Fout bij verwijderen categorie: ${result.error.message}`)
+      } else {
+        setImportMessage("✅ Categorie verwijderd!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
+    } catch (error) {
+      setImportError("Fout bij verwijderen categorie")
     }
   }
 
@@ -1424,138 +1487,161 @@ if (typeof window !== 'undefined') {
             <Card className="shadow-sm">
               <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  <Package className="h-5 w-5" /> Producten Beheren
+                  <Package className="h-5 w-5" /> Producten & Categorieën Beheren
                 </CardTitle>
-                <CardDescription>Voeg nieuwe producten toe of verwijder bestaande producten</CardDescription>
+                <CardDescription>Beheer je producten en organiseer ze in categorieën</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <h3 className="text-lg font-medium mb-4">Nieuw product toevoegen</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="newProductName" className="block text-sm font-medium mb-1">
-                          Productnaam
-                        </Label>
-                        <Input
-                          id="newProductName"
-                          placeholder="Voer productnaam in..."
-                          value={newProductName}
-                          onChange={(e) => setNewProductName(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="newProductQrCode" className="block text-sm font-medium mb-1">
-                          QR Code (optioneel)
-                        </Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="newProductQrCode"
-                            placeholder="QR Code..."
-                            value={newProductQrCode}
-                            onChange={(e) => setNewProductQrCode(e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              console.log("QR button clicked for product management")
-                              setQrScanMode("product-management")
-                              startQrScanner()
-                            }}
-                            variant="outline"
-                            className="px-2"
-                            disabled={showQrScanner}
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
+                <Tabs defaultValue="products" className="space-y-6">
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100">
+                    <TabsTrigger value="products" className="data-[state=active]:bg-white">
+                      Producten ({products.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="categories" className="data-[state=active]:bg-white">
+                      Categorieën ({categories.length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="products">
+                    {/* Bestaande producten content */}
+                    <div className="space-y-6">
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-medium mb-4">Nieuw product toevoegen</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="sm:col-span-2">
+                            <Label htmlFor="newProductName" className="block text-sm font-medium mb-1">
+                              Productnaam
+                            </Label>
+                            <Input
+                              id="newProductName"
+                              placeholder="Voer productnaam in..."
+                              value={newProductName}
+                              onChange={(e) => setNewProductName(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="newProductQrCode" className="block text-sm font-medium mb-1">
+                              QR Code (optioneel)
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="newProductQrCode"
+                                placeholder="QR Code..."
+                                value={newProductQrCode}
+                                onChange={(e) => setNewProductQrCode(e.target.value)}
+                              />
+                              <Button
+                                type="button"
+                                onClick={() => {
+                                  console.log("QR button clicked for product management")
+                                  setQrScanMode("product-management")
+                                  startQrScanner()
+                                }}
+                                variant="outline"
+                                className="px-2"
+                                disabled={showQrScanner}
+                              >
+                                <QrCode className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="sm:col-span-3">
+                            <Button onClick={addNewProduct} className="bg-amber-600 hover:bg-amber-700">
+                              <Plus className="mr-1 h-4 w-4" /> Product Toevoegen
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="sm:col-span-3">
-                        <Button onClick={addNewProduct} className="bg-amber-600 hover:bg-amber-700">
-                          <Plus className="mr-1 h-4 w-4" /> Product Toevoegen
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex-1">
-                        <Label htmlFor="productImport" className="block text-sm font-medium mb-1">
-                          Importeer producten (CSV formaat: Naam,QRCode)
-                        </Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="productImport"
-                            type="file"
-                            accept=".csv"
-                            ref={productFileInputRef}
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                handleFileImport(e.target.files[0], "products")
-                              }
-                            }}
-                          />
-                          <Button
-                            onClick={() => exportTemplate("products")}
-                            variant="outline"
-                            className="whitespace-nowrap"
-                          >
-                            <FileText className="mr-1 h-4 w-4" /> Template
-                          </Button>
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-medium mb-4">Importeren / Exporteren</h3>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <Label htmlFor="productImport" className="block text-sm font-medium mb-1">
+                              Importeer producten (CSV formaat: Naam,QRCode)
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id="productImport"
+                                type="file"
+                                accept=".csv"
+                                ref={productFileInputRef}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleFileImport(e.target.files[0], "products")
+                                  }
+                                }}
+                              />
+                              <Button
+                                onClick={() => exportTemplate("products")}
+                                variant="outline"
+                                className="whitespace-nowrap"
+                              >
+                                <FileText className="mr-1 h-4 w-4" /> Template
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="rounded-lg border overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow>
-                          <TableHead>Naam</TableHead>
-                          <TableHead className="hidden md:table-cell">QR Code</TableHead>
-                          <TableHead className="w-[100px] text-right">Acties</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {products.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={3} className="text-center py-8 text-gray-500">
-                              Geen producten gevonden
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          products.map((product) => (
-                            <TableRow key={product.id}>
-                              <TableCell className="font-medium">{product.name}</TableCell>
-                              <TableCell className="hidden md:table-cell">
-                                {product.qrcode ? (
-                                  <Badge variant="outline" className="font-mono text-xs">
-                                    {product.qrcode}
-                                  </Badge>
-                                ) : (
-                                  "-"
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  onClick={() => removeProduct(product)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Verwijder {product.name}</span>
-                                </Button>
-                              </TableCell>
+                      <div className="rounded-lg border overflow-hidden">
+                        <Table>
+                          <TableHeader className="bg-gray-50">
+                            <TableRow>
+                              <TableHead>Naam</TableHead>
+                              <TableHead className="hidden md:table-cell">QR Code</TableHead>
+                              <TableHead className="w-[100px] text-right">Acties</TableHead>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
+                          </TableHeader>
+                          <TableBody>
+                            {products.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                                  Geen producten gevonden
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              products.map((product) => (
+                                <TableRow key={product.id}>
+                                  <TableCell className="font-medium">{product.name}</TableCell>
+                                  <TableCell className="hidden md:table-cell">
+                                    {product.qrcode ? (
+                                      <Badge variant="outline" className="font-mono text-xs">
+                                        {product.qrcode}
+                                      </Badge>
+                                    ) : (
+                                      "-"
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      onClick={() => removeProduct(product)}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Verwijder {product.name}</span>
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="categories">
+                    <CategoryManagement
+                      categories={categories}
+                      onAddCategory={handleAddCategory}
+                      onUpdateCategory={handleUpdateCategory}
+                      onDeleteCategory={handleDeleteCategory}
+                    />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

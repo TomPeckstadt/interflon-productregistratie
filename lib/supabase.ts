@@ -67,6 +67,7 @@ export interface Product {
   id?: string
   name: string
   qrcode?: string // Aangepast naar lowercase om overeen te komen met de database
+  category_id?: string
   created_at?: string
 }
 
@@ -80,6 +81,15 @@ export interface RegistrationEntry {
   date: string
   time: string
   qrcode?: string // Aangepast naar lowercase om overeen te komen met de database
+  created_at?: string
+}
+
+// Voeg deze nieuwe interface toe na de bestaande interfaces
+export interface ProductCategory {
+  id?: string
+  name: string
+  description?: string
+  color?: string
   created_at?: string
 }
 
@@ -427,4 +437,87 @@ export function subscribeToRegistrations(callback: (registrations: RegistrationE
       if (data) callback(data)
     })
     .subscribe()
+}
+
+// Categorieën functies
+export async function fetchCategories() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.from("categories").select("*").order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching categories:", error)
+    return { data: [], error }
+  }
+
+  return { data: data || [], error: null }
+}
+
+export async function saveCategory(category: Omit<ProductCategory, "id" | "created_at">) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.from("categories").insert([category]).select()
+
+  if (error) {
+    console.error("Error saving category:", error)
+    return { data: null, error }
+  }
+
+  return { data: data?.[0] || null, error: null }
+}
+
+export async function updateCategory(id: string, category: Partial<ProductCategory>) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.from("categories").update(category).eq("id", id).select()
+
+  if (error) {
+    console.error("Error updating category:", error)
+    return { data: null, error }
+  }
+
+  return { data: data?.[0] || null, error: null }
+}
+
+export async function deleteCategory(id: string) {
+  const supabase = getSupabaseClient()
+  const { error } = await supabase.from("categories").delete().eq("id", id)
+
+  if (error) {
+    console.error("Error deleting category:", error)
+    return { success: false, error }
+  }
+
+  return { success: true, error: null }
+}
+
+export function subscribeToCategories(callback: (categories: ProductCategory[]) => void) {
+  debugLog("Setting up categories subscription")
+  const supabase = getSupabaseClient()
+
+  try {
+    const subscription = supabase
+      .channel("categories-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, async (payload) => {
+        debugLog("Categories change detected:", payload)
+        const { data, error } = await supabase.from("categories").select("*").order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching updated categories:", error)
+          return
+        }
+
+        if (data) {
+          debugLog("Updated categories list:", data)
+          callback(data)
+        }
+      })
+      .subscribe((status) => {
+        debugLog(`Categories subscription status: ${status}`)
+      })
+
+    return subscription
+  } catch (error) {
+    console.error("Error setting up categories subscription:", error)
+    return {
+      unsubscribe: () => {},
+    }
+  }
 }
