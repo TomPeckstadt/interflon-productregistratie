@@ -442,50 +442,91 @@ export function subscribeToRegistrations(callback: (registrations: RegistrationE
 // Categorieën functies
 export async function fetchCategories() {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.from("categories").select("*").order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching categories:", error)
+  try {
+    const { data, error } = await supabase.from("categories").select("*").order("created_at", { ascending: false })
+
+    if (error) {
+      // Check if the error is because the table doesn't exist
+      if (error.message.includes('relation "public.categories" does not exist')) {
+        console.warn("Categories table doesn't exist yet. Please run the SQL script to create it.")
+        return { data: [], error: null }
+      }
+      console.error("Error fetching categories:", error)
+      return { data: [], error }
+    }
+
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error("Unexpected error fetching categories:", error)
     return { data: [], error }
   }
-
-  return { data: data || [], error: null }
 }
 
 export async function saveCategory(category: Omit<ProductCategory, "id" | "created_at">) {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.from("categories").insert([category]).select()
 
-  if (error) {
-    console.error("Error saving category:", error)
+  try {
+    const { data, error } = await supabase.from("categories").insert([category]).select()
+
+    if (error) {
+      if (error.message.includes('relation "public.categories" does not exist')) {
+        return { data: null, error: { message: "Categories table doesn't exist. Please run the SQL script first." } }
+      }
+      console.error("Error saving category:", error)
+      return { data: null, error }
+    }
+
+    return { data: data?.[0] || null, error: null }
+  } catch (error) {
+    console.error("Unexpected error saving category:", error)
     return { data: null, error }
   }
-
-  return { data: data?.[0] || null, error: null }
 }
 
 export async function updateCategory(id: string, category: Partial<ProductCategory>) {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.from("categories").update(category).eq("id", id).select()
 
-  if (error) {
-    console.error("Error updating category:", error)
+  try {
+    const { data, error } = await supabase.from("categories").update(category).eq("id", id).select()
+
+    if (error) {
+      if (error.message.includes('relation "public.categories" does not exist')) {
+        return { data: null, error: { message: "Categories table doesn't exist. Please run the SQL script first." } }
+      }
+      console.error("Error updating category:", error)
+      return { data: null, error }
+    }
+
+    return { data: data?.[0] || null, error: null }
+  } catch (error) {
+    console.error("Unexpected error updating category:", error)
     return { data: null, error }
   }
-
-  return { data: data?.[0] || null, error: null }
 }
 
 export async function deleteCategory(id: string) {
   const supabase = getSupabaseClient()
-  const { error } = await supabase.from("categories").delete().eq("id", id)
 
-  if (error) {
-    console.error("Error deleting category:", error)
+  try {
+    const { error } = await supabase.from("categories").delete().eq("id", id)
+
+    if (error) {
+      if (error.message.includes('relation "public.categories" does not exist')) {
+        return {
+          success: false,
+          error: { message: "Categories table doesn't exist. Please run the SQL script first." },
+        }
+      }
+      console.error("Error deleting category:", error)
+      return { success: false, error }
+    }
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error("Unexpected error deleting category:", error)
     return { success: false, error }
   }
-
-  return { success: true, error: null }
 }
 
 export function subscribeToCategories(callback: (categories: ProductCategory[]) => void) {
@@ -497,16 +538,30 @@ export function subscribeToCategories(callback: (categories: ProductCategory[]) 
       .channel("categories-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, async (payload) => {
         debugLog("Categories change detected:", payload)
-        const { data, error } = await supabase.from("categories").select("*").order("created_at", { ascending: false })
 
-        if (error) {
-          console.error("Error fetching updated categories:", error)
-          return
-        }
+        try {
+          const { data, error } = await supabase
+            .from("categories")
+            .select("*")
+            .order("created_at", { ascending: false })
 
-        if (data) {
-          debugLog("Updated categories list:", data)
-          callback(data)
+          if (error) {
+            if (error.message.includes('relation "public.categories" does not exist')) {
+              console.warn("Categories table doesn't exist yet for subscription.")
+              callback([])
+              return
+            }
+            console.error("Error fetching updated categories:", error)
+            return
+          }
+
+          if (data) {
+            debugLog("Updated categories list:", data)
+            callback(data)
+          }
+        } catch (error) {
+          console.error("Error in categories subscription:", error)
+          callback([])
         }
       })
       .subscribe((status) => {

@@ -48,6 +48,7 @@ export function CategoryManagement({
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null)
+  const [showSetupMessage, setShowSetupMessage] = useState(false)
 
   const [newCategoryName, setNewCategoryName] = useState("")
   const [newCategoryDescription, setNewCategoryDescription] = useState("")
@@ -59,17 +60,22 @@ export function CategoryManagement({
     setNewCategoryColor(predefinedColors[0])
   }
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return
 
-    onAddCategory({
-      name: newCategoryName.trim(),
-      description: newCategoryDescription.trim() || undefined,
-      color: newCategoryColor,
-    })
+    try {
+      await onAddCategory({
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim() || undefined,
+        color: newCategoryColor,
+      })
 
-    resetForm()
-    setShowAddDialog(false)
+      resetForm()
+      setShowAddDialog(false)
+    } catch (error) {
+      setShowSetupMessage(true)
+      setTimeout(() => setShowSetupMessage(false), 5000)
+    }
   }
 
   const handleEditCategory = (category: ProductCategory) => {
@@ -104,6 +110,18 @@ export function CategoryManagement({
 
   return (
     <div className="space-y-6">
+      {showSetupMessage && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+            <h4 className="font-medium text-yellow-800">Database Setup Vereist</h4>
+          </div>
+          <p className="text-sm text-yellow-700 mt-2">
+            De categorieën tabel bestaat nog niet. Voer eerst het SQL script uit om de database op te zetten.
+          </p>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -124,10 +142,15 @@ export function CategoryManagement({
             <Tag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nog geen categorieën</h3>
             <p className="text-muted-foreground mb-4">Begin met het toevoegen van je eerste productcategorie</p>
-            <Button onClick={() => setShowAddDialog(true)} className="bg-amber-600 hover:bg-amber-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Eerste Categorie Toevoegen
-            </Button>
+            <div className="space-y-2">
+              <Button onClick={() => setShowAddDialog(true)} className="bg-amber-600 hover:bg-amber-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Eerste Categorie Toevoegen
+              </Button>
+              <p className="text-xs text-gray-500">
+                Als dit niet werkt, voer eerst het SQL script uit om de database op te zetten.
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : (

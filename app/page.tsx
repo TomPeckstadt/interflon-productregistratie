@@ -208,8 +208,16 @@ export default function ProductRegistrationApp() {
       if (purposesResult.data) setPurposes(purposesResult.data)
       if (registrationsResult.data) setEntries(registrationsResult.data)
 
-      const categoriesResult = await fetchCategories()
-      if (categoriesResult.data) setCategories(categoriesResult.data)
+      // Load categories with error handling
+      try {
+        const categoriesResult = await fetchCategories()
+        if (categoriesResult.data) {
+          setCategories(categoriesResult.data)
+        }
+      } catch (error) {
+        console.warn("Could not load categories:", error)
+        setCategories([])
+      }
 
       setConnectionStatus("connected")
       setImportMessage("✅ Verbonden met database - alle data gesynchroniseerd!")
