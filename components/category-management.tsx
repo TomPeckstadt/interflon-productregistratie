@@ -38,8 +38,6 @@ const predefinedColors = [
   "#78716c", // stone
 ]
 
-const colorNames = ["Rood", "Oranje", "Geel", "Groen", "Cyaan", "Blauw", "Violet", "Roze", "Grijs", "Bruin"]
-
 export function CategoryManagement({
   categories,
   onAddCategory,
@@ -61,16 +59,17 @@ export function CategoryManagement({
     setNewCategoryColor(predefinedColors[0])
   }
 
-  const getColorName = (hexColor: string) => {
-    const index = predefinedColors.indexOf(hexColor)
-    return index !== -1 ? colorNames[index] : "Onbekend"
-  }
-
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return
 
     setIsLoading(true)
     try {
+      console.log("Adding category:", {
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim() || undefined,
+        color: newCategoryColor,
+      })
+
       await onAddCategory({
         name: newCategoryName.trim(),
         description: newCategoryDescription.trim() || undefined,
@@ -133,7 +132,13 @@ export function CategoryManagement({
           </h3>
           <p className="text-sm text-muted-foreground">Organiseer je producten in categorieën</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="bg-amber-600 hover:bg-amber-700">
+        <Button
+          onClick={() => {
+            console.log("Nieuwe Categorie button clicked")
+            setShowAddDialog(true)
+          }}
+          className="bg-amber-600 hover:bg-amber-700"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nieuwe Categorie
         </Button>
@@ -150,7 +155,6 @@ export function CategoryManagement({
                 <Plus className="h-4 w-4 mr-2" />
                 Eerste Categorie Toevoegen
               </Button>
-              <p className="text-xs text-gray-500">Als dit niet werkt, controleer of de database correct is opgezet.</p>
             </div>
           </CardContent>
         </Card>
@@ -175,11 +179,10 @@ export function CategoryManagement({
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-6 h-6 rounded-full border border-gray-200 shadow-sm"
+                        className="w-6 h-6 rounded-full border border-gray-200"
                         style={{ backgroundColor: category.color }}
-                        title={getColorName(category.color || "")}
+                        title={category.color}
                       />
-                      <span className="text-sm text-gray-600">{getColorName(category.color || "")}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -240,22 +243,22 @@ export function CategoryManagement({
             </div>
             <div className="space-y-2">
               <Label>Kleur</Label>
-              <div className="grid grid-cols-5 gap-3">
-                {predefinedColors.map((color, index) => (
+              <div className="flex gap-2 flex-wrap">
+                {predefinedColors.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 ${
-                      newCategoryColor === color ? "border-gray-900 ring-2 ring-gray-300" : "border-gray-300"
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      newCategoryColor === color ? "border-gray-900 scale-110" : "border-gray-300 hover:border-gray-500"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setNewCategoryColor(color)}
-                    title={colorNames[index]}
                     disabled={isLoading}
+                    title={color}
                   />
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Geselecteerd: {getColorName(newCategoryColor)}</p>
+              <p className="text-xs text-gray-500">Geselecteerde kleur: {newCategoryColor}</p>
             </div>
           </div>
           <DialogFooter>
@@ -300,22 +303,22 @@ export function CategoryManagement({
             </div>
             <div className="space-y-2">
               <Label>Kleur</Label>
-              <div className="grid grid-cols-5 gap-3">
-                {predefinedColors.map((color, index) => (
+              <div className="flex gap-2 flex-wrap">
+                {predefinedColors.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 ${
-                      newCategoryColor === color ? "border-gray-900 ring-2 ring-gray-300" : "border-gray-300"
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      newCategoryColor === color ? "border-gray-900 scale-110" : "border-gray-300 hover:border-gray-500"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setNewCategoryColor(color)}
-                    title={colorNames[index]}
                     disabled={isLoading}
+                    title={color}
                   />
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Geselecteerd: {getColorName(newCategoryColor)}</p>
+              <p className="text-xs text-gray-500">Geselecteerde kleur: {newCategoryColor}</p>
             </div>
           </div>
           <DialogFooter>
