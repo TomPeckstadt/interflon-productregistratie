@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -39,6 +38,8 @@ const predefinedColors = [
   "#78716c", // stone
 ]
 
+const colorNames = ["Rood", "Oranje", "Geel", "Groen", "Cyaan", "Blauw", "Violet", "Roze", "Grijs", "Bruin"]
+
 export function CategoryManagement({
   categories,
   onAddCategory,
@@ -48,7 +49,7 @@ export function CategoryManagement({
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null)
-  const [showSetupMessage, setShowSetupMessage] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const [newCategoryName, setNewCategoryName] = useState("")
   const [newCategoryDescription, setNewCategoryDescription] = useState("")
@@ -60,9 +61,15 @@ export function CategoryManagement({
     setNewCategoryColor(predefinedColors[0])
   }
 
+  const getColorName = (hexColor: string) => {
+    const index = predefinedColors.indexOf(hexColor)
+    return index !== -1 ? colorNames[index] : "Onbekend"
+  }
+
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return
 
+    setIsLoading(true)
     try {
       await onAddCategory({
         name: newCategoryName.trim(),
@@ -74,8 +81,8 @@ export function CategoryManagement({
       setShowAddDialog(false)
     } catch (error) {
       console.error("Error in handleAddCategory:", error)
-      setShowSetupMessage(true)
-      setTimeout(() => setShowSetupMessage(false), 5000)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -87,18 +94,25 @@ export function CategoryManagement({
     setShowEditDialog(true)
   }
 
-  const handleUpdateCategory = () => {
+  const handleUpdateCategory = async () => {
     if (!editingCategory?.id || !newCategoryName.trim()) return
 
-    onUpdateCategory(editingCategory.id, {
-      name: newCategoryName.trim(),
-      description: newCategoryDescription.trim() || undefined,
-      color: newCategoryColor,
-    })
+    setIsLoading(true)
+    try {
+      await onUpdateCategory(editingCategory.id, {
+        name: newCategoryName.trim(),
+        description: newCategoryDescription.trim() || undefined,
+        color: newCategoryColor,
+      })
 
-    resetForm()
-    setShowEditDialog(false)
-    setEditingCategory(null)
+      resetForm()
+      setShowEditDialog(false)
+      setEditingCategory(null)
+    } catch (error) {
+      console.error("Error in handleUpdateCategory:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleDeleteCategory = (category: ProductCategory) => {
@@ -111,18 +125,6 @@ export function CategoryManagement({
 
   return (
     <div className="space-y-6">
-      {showSetupMessage && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-            <h4 className="font-medium text-yellow-800">Database Setup Vereist</h4>
-          </div>
-          <p className="text-sm text-yellow-700 mt-2">
-            De categorieën tabel bestaat nog niet. Voer eerst het SQL script uit om de database op te zetten.
-          </p>
-        </div>
-      )}
-
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -148,9 +150,7 @@ export function CategoryManagement({
                 <Plus className="h-4 w-4 mr-2" />
                 Eerste Categorie Toevoegen
               </Button>
-              <p className="text-xs text-gray-500">
-                Als dit niet werkt, voer eerst het SQL script uit om de database op te zetten.
-              </p>
+              <p className="text-xs text-gray-500">Als dit niet werkt, controleer of de database correct is opgezet.</p>
             </div>
           </CardContent>
         </Card>
@@ -175,12 +175,11 @@ export function CategoryManagement({
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-4 h-4 rounded-full border border-gray-200"
+                        className="w-6 h-6 rounded-full border border-gray-200 shadow-sm"
                         style={{ backgroundColor: category.color }}
+                        title={getColorName(category.color || "")}
                       />
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {category.color}
-                      </Badge>
+                      <span className="text-sm text-gray-600">{getColorName(category.color || "")}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -225,6 +224,7 @@ export function CategoryManagement({
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Bijv. Smeermiddelen"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -235,31 +235,35 @@ export function CategoryManagement({
                 onChange={(e) => setNewCategoryDescription(e.target.value)}
                 placeholder="Optionele beschrijving van de categorie"
                 rows={3}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
               <Label>Kleur</Label>
-              <div className="flex gap-2 flex-wrap">
-                {predefinedColors.map((color) => (
+              <div className="grid grid-cols-5 gap-3">
+                {predefinedColors.map((color, index) => (
                   <button
                     key={color}
                     type="button"
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      newCategoryColor === color ? "border-gray-900" : "border-gray-300"
+                    className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 ${
+                      newCategoryColor === color ? "border-gray-900 ring-2 ring-gray-300" : "border-gray-300"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setNewCategoryColor(color)}
+                    title={colorNames[index]}
+                    disabled={isLoading}
                   />
                 ))}
               </div>
+              <p className="text-xs text-gray-500 mt-2">Geselecteerd: {getColorName(newCategoryColor)}</p>
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)} disabled={isLoading}>
               Annuleren
             </Button>
-            <Button onClick={handleAddCategory} disabled={!newCategoryName.trim()}>
-              Categorie Toevoegen
+            <Button onClick={handleAddCategory} disabled={!newCategoryName.trim() || isLoading}>
+              {isLoading ? "Bezig..." : "Categorie Toevoegen"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -280,6 +284,7 @@ export function CategoryManagement({
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Bijv. Smeermiddelen"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -290,31 +295,35 @@ export function CategoryManagement({
                 onChange={(e) => setNewCategoryDescription(e.target.value)}
                 placeholder="Optionele beschrijving van de categorie"
                 rows={3}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
               <Label>Kleur</Label>
-              <div className="flex gap-2 flex-wrap">
-                {predefinedColors.map((color) => (
+              <div className="grid grid-cols-5 gap-3">
+                {predefinedColors.map((color, index) => (
                   <button
                     key={color}
                     type="button"
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      newCategoryColor === color ? "border-gray-900" : "border-gray-300"
+                    className={`w-10 h-10 rounded-full border-2 transition-all hover:scale-110 ${
+                      newCategoryColor === color ? "border-gray-900 ring-2 ring-gray-300" : "border-gray-300"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setNewCategoryColor(color)}
+                    title={colorNames[index]}
+                    disabled={isLoading}
                   />
                 ))}
               </div>
+              <p className="text-xs text-gray-500 mt-2">Geselecteerd: {getColorName(newCategoryColor)}</p>
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)} disabled={isLoading}>
               Annuleren
             </Button>
-            <Button onClick={handleUpdateCategory} disabled={!newCategoryName.trim()}>
-              Wijzigingen Opslaan
+            <Button onClick={handleUpdateCategory} disabled={!newCategoryName.trim() || isLoading}>
+              {isLoading ? "Bezig..." : "Wijzigingen Opslaan"}
             </Button>
           </DialogFooter>
         </DialogContent>
