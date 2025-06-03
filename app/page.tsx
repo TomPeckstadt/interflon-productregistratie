@@ -3,8 +3,8 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import {
-  fetchProducts,
   saveProduct,
+  updateProduct,
   deleteProduct,
   fetchUsers,
   saveUser,
@@ -22,6 +22,7 @@ import {
   subscribeToLocations,
   subscribeToPurposes,
   subscribeToRegistrations,
+  fetchProductsWithCategories,
   type Product,
   type RegistrationEntry,
 } from "@/lib/supabase"
@@ -48,7 +49,17 @@ import {
   TrendingUp,
   Clock,
   MapPin,
+  Edit,
+  Filter,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 // Voeg deze imports toe voor de charts
 import {
@@ -104,8 +115,16 @@ export default function ProductRegistrationApp() {
   const [newUserName, setNewUserName] = useState("")
   const [newProductName, setNewProductName] = useState("")
   const [newProductQrCode, setNewProductQrCode] = useState("")
+  const [newProductCategoryId, setNewProductCategoryId] = useState("")
   const [newLocationName, setNewLocationName] = useState("")
   const [newPurposeName, setNewPurposeName] = useState("")
+
+  // Product edit states
+  const [showEditProductDialog, setShowEditProductDialog] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editProductName, setEditProductName] = useState("")
+  const [editProductQrCode, setEditProductQrCode] = useState("")
+  const [editProductCategoryId, setEditProductCategoryId] = useState("")
 
   // QR Scanner states
   const [showQrScanner, setShowQrScanner] = useState(false)
@@ -135,6 +154,10 @@ export default function ProductRegistrationApp() {
   const [filterDateTo, setFilterDateTo] = useState("")
   const [sortBy, setSortBy] = useState<"date" | "user" | "product">("date")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
+  // Product filter states
+  const [productSearchQuery, setProductSearchQuery] = useState("")
+  const [productCategoryFilter, setProductCategoryFilter] = useState("all")
 
   // Categorieën states
   const [categories, setCategories] = useState<ProductCategory[]>([])
@@ -190,7 +213,7 @@ export default function ProductRegistrationApp() {
 
       const [usersResult, productsResult, locationsResult, purposesResult, registrationsResult] = await Promise.all([
         fetchUsers(),
-        fetchProducts(),
+        fetchProductsWithCategories(),
         fetchLocations(),
         fetchPurposes(),
         fetchRegistrations(),
@@ -235,7 +258,12 @@ export default function ProductRegistrationApp() {
     try {
       const unsubscribeProducts = subscribeToProducts((updatedProducts) => {
         console.log("Products subscription update received:", updatedProducts.length)
-        setProducts(updatedProducts)
+        // Reload products with categories when products change
+        fetchProductsWithCategories().then((result) => {
+          if (result.data) {
+            setProducts(result.data)
+          }
+        })
       })
 
       const unsubscribeUsers = subscribeToUsers((updatedUsers) => {
@@ -647,24 +675,31 @@ export default function ProductRegistrationApp() {
     if (newProductName.trim()) {
       try {
         const qrcode = newProductQrCode.trim() || ""
+        const category_id = newProductCategoryId || undefined
         const existingProduct = products.find(
           (p) => p.name === newProductName.trim() || (qrcode && p.qrcode === qrcode),
         )
         if (!existingProduct) {
           console.log("addNewProduct aangeroepen voor:", newProductName.trim())
-          const result = await saveProduct({ name: newProductName.trim(), qrcode })
+          const result = await saveProduct({
+            name: newProductName.trim(),
+            qrcode,
+            category_id,
+          })
 
           if (result.error) {
             console.error("Fout bij toevoegen product:", result.error)
             setImportError(`Fout bij toevoegen product: ${result.error.message || "Onbekende fout"}`)
           } else {
-            if (result.data) {
-              console.log("Product direct toevoegen aan lijst:", result.data)
-              setProducts((prevProducts) => [result.data, ...prevProducts])
+            // Reload products with categories
+            const updatedProducts = await fetchProductsWithCategories()
+            if (updatedProducts.data) {
+              setProducts(updatedProducts.data)
             }
 
             setNewProductName("")
             setNewProductQrCode("")
+            setNewProductCategoryId("")
             setImportMessage("✅ Product toegevoegd!")
             setTimeout(() => setImportMessage(""), 2000)
           }
@@ -673,6 +708,44 @@ export default function ProductRegistrationApp() {
         console.error("Onverwachte fout bij toevoegen product:", error)
         setImportError("Fout bij toevoegen product")
       }
+    }
+  }
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product)
+    setEditProductName(product.name)
+    setEditProductQrCode(product.qrcode || "")
+    setEditProductCategoryId(product.category_id || "")
+    setShowEditProductDialog(true)
+  }
+
+  const handleUpdateProduct = async () => {
+    if (!editingProduct?.id || !editProductName.trim()) return
+
+    try {
+      const result = await updateProduct(editingProduct.id, {
+        name: editProductName.trim(),
+        qrcode: editProductQrCode.trim() || undefined,
+        category_id: editProductCategoryId || undefined,
+      })
+
+      if (result.error) {
+        setImportError(`Fout bij bijwerken product: ${result.error.message || "Onbekende fout"}`)
+      } else {
+        // Reload products with categories
+        const updatedProducts = await fetchProductsWithCategories()
+        if (updatedProducts.data) {
+          setProducts(updatedProducts.data)
+        }
+
+        setShowEditProductDialog(false)
+        setEditingProduct(null)
+        setImportMessage("✅ Product bijgewerkt!")
+        setTimeout(() => setImportMessage(""), 2000)
+      }
+    } catch (error) {
+      console.error("Fout bij bijwerken product:", error)
+      setImportError("Fout bij bijwerken product")
     }
   }
 
@@ -921,6 +994,22 @@ export default function ProductRegistrationApp() {
     return filtered
   }
 
+  const getFilteredProducts = () => {
+    return products.filter((product) => {
+      const searchMatch =
+        !productSearchQuery ||
+        product.name.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
+        (product.qrcode && product.qrcode.toLowerCase().includes(productSearchQuery.toLowerCase()))
+
+      const categoryMatch =
+        productCategoryFilter === "all" ||
+        product.category_id === productCategoryFilter ||
+        (!product.category_id && productCategoryFilter === "none")
+
+      return searchMatch && categoryMatch
+    })
+  }
+
   const clearAllFilters = () => {
     setSearchQuery("")
     setFilterUser("all")
@@ -1156,7 +1245,15 @@ export default function ProductRegistrationApp() {
                           <SelectContent>
                             {products.map((product) => (
                               <SelectItem key={product.id} value={product.name}>
-                                {product.name} {product.qrcode && `(${product.qrcode})`}
+                                <div className="flex items-center gap-2">
+                                  {product.category && (
+                                    <div
+                                      className="w-3 h-3 rounded-full"
+                                      style={{ backgroundColor: product.category.color }}
+                                    />
+                                  )}
+                                  {product.name} {product.qrcode && `(${product.qrcode})`}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1523,14 +1620,13 @@ export default function ProductRegistrationApp() {
                   </TabsList>
 
                   <TabsContent value="products">
-                    {/* Bestaande producten content */}
                     <div className="space-y-6">
                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h3 className="text-lg font-medium mb-4">Nieuw product toevoegen</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div className="sm:col-span-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div>
                             <Label htmlFor="newProductName" className="block text-sm font-medium mb-1">
-                              Productnaam
+                              Productnaam *
                             </Label>
                             <Input
                               id="newProductName"
@@ -1541,7 +1637,7 @@ export default function ProductRegistrationApp() {
                           </div>
                           <div>
                             <Label htmlFor="newProductQrCode" className="block text-sm font-medium mb-1">
-                              QR Code (optioneel)
+                              QR Code
                             </Label>
                             <div className="flex gap-2">
                               <Input
@@ -1565,9 +1661,91 @@ export default function ProductRegistrationApp() {
                               </Button>
                             </div>
                           </div>
-                          <div className="sm:col-span-3">
-                            <Button onClick={addNewProduct} className="bg-amber-600 hover:bg-amber-700">
+                          <div>
+                            <Label htmlFor="newProductCategory" className="block text-sm font-medium mb-1">
+                              Categorie
+                            </Label>
+                            <Select value={newProductCategoryId} onValueChange={setNewProductCategoryId}>
+                              <SelectTrigger id="newProductCategory">
+                                <SelectValue placeholder="Selecteer categorie" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Geen categorie</SelectItem>
+                                {categories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id!}>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: category.color }}
+                                      />
+                                      {category.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-end">
+                            <Button onClick={addNewProduct} className="bg-amber-600 hover:bg-amber-700 w-full">
                               <Plus className="mr-1 h-4 w-4" /> Product Toevoegen
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-medium mb-4">Producten filteren</h3>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <Label htmlFor="productSearch" className="block text-sm font-medium mb-1">
+                              Zoeken
+                            </Label>
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                              <Input
+                                id="productSearch"
+                                type="text"
+                                placeholder="Zoek op naam of QR code..."
+                                value={productSearchQuery}
+                                onChange={(e) => setProductSearchQuery(e.target.value)}
+                                className="pl-8"
+                              />
+                            </div>
+                          </div>
+                          <div className="w-full sm:w-48">
+                            <Label htmlFor="categoryFilter" className="block text-sm font-medium mb-1">
+                              Categorie
+                            </Label>
+                            <Select value={productCategoryFilter} onValueChange={setProductCategoryFilter}>
+                              <SelectTrigger id="categoryFilter">
+                                <SelectValue placeholder="Alle categorieën" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Alle categorieën</SelectItem>
+                                <SelectItem value="none">Geen categorie</SelectItem>
+                                {categories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id!}>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: category.color }}
+                                      />
+                                      {category.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setProductSearchQuery("")
+                                setProductCategoryFilter("all")
+                              }}
+                            >
+                              <Filter className="mr-1 h-4 w-4" /> Reset
                             </Button>
                           </div>
                         </div>
@@ -1610,18 +1788,19 @@ export default function ProductRegistrationApp() {
                             <TableRow>
                               <TableHead>Naam</TableHead>
                               <TableHead className="hidden md:table-cell">QR Code</TableHead>
-                              <TableHead className="w-[100px] text-right">Acties</TableHead>
+                              <TableHead>Categorie</TableHead>
+                              <TableHead className="w-[120px] text-right">Acties</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {products.length === 0 ? (
+                            {getFilteredProducts().length === 0 ? (
                               <TableRow>
-                                <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                                <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                                   Geen producten gevonden
                                 </TableCell>
                               </TableRow>
                             ) : (
-                              products.map((product) => (
+                              getFilteredProducts().map((product) => (
                                 <TableRow key={product.id}>
                                   <TableCell className="font-medium">{product.name}</TableCell>
                                   <TableCell className="hidden md:table-cell">
@@ -1633,16 +1812,39 @@ export default function ProductRegistrationApp() {
                                       "-"
                                     )}
                                   </TableCell>
+                                  <TableCell>
+                                    {product.category ? (
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          className="w-4 h-4 rounded-full"
+                                          style={{ backgroundColor: product.category.color }}
+                                        />
+                                        <span className="text-sm">{product.category.name}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-500 text-sm">Geen categorie</span>
+                                    )}
+                                  </TableCell>
                                   <TableCell className="text-right">
-                                    <Button
-                                      onClick={() => removeProduct(product)}
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                      <span className="sr-only">Verwijder {product.name}</span>
-                                    </Button>
+                                    <div className="flex gap-1 justify-end">
+                                      <Button
+                                        onClick={() => handleEditProduct(product)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => removeProduct(product)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Verwijder {product.name}</span>
+                                      </Button>
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               ))
@@ -2142,6 +2344,63 @@ export default function ProductRegistrationApp() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={showEditProductDialog} onOpenChange={setShowEditProductDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Product Bewerken</DialogTitle>
+              <DialogDescription>Bewerk de gegevens van het product.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editProductName">Naam *</Label>
+                <Input
+                  id="editProductName"
+                  value={editProductName}
+                  onChange={(e) => setEditProductName(e.target.value)}
+                  placeholder="Productnaam"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editProductQrCode">QR Code</Label>
+                <Input
+                  id="editProductQrCode"
+                  value={editProductQrCode}
+                  onChange={(e) => setEditProductQrCode(e.target.value)}
+                  placeholder="QR Code (optioneel)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editProductCategory">Categorie</Label>
+                <Select value={editProductCategoryId} onValueChange={setEditProductCategoryId}>
+                  <SelectTrigger id="editProductCategory">
+                    <SelectValue placeholder="Selecteer categorie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Geen categorie</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id!}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                          {category.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowEditProductDialog(false)}>
+                Annuleren
+              </Button>
+              <Button onClick={handleUpdateProduct} disabled={!editProductName.trim()}>
+                Wijzigingen Opslaan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* QR Scanner Modal */}
         {showQrScanner && (

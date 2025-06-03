@@ -63,12 +63,15 @@ export const createServerSupabaseClient = () => {
 }
 
 // Type definities
+// Update de Product interface om category_id en category informatie toe te voegen
 export interface Product {
   id?: string
   name: string
-  qrcode?: string // Aangepast naar lowercase om overeen te komen met de database
+  qrcode?: string
   category_id?: string
   created_at?: string
+  // Voor joined queries
+  category?: ProductCategory
 }
 
 export interface RegistrationEntry {
@@ -116,6 +119,38 @@ export async function saveProduct(product: Product) {
   }
 
   return { data: data?.[0] || null, error: null }
+}
+
+// Voeg deze functie toe na de saveProduct functie
+export async function updateProduct(id: string, product: Partial<Product>) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.from("products").update(product).eq("id", id).select()
+
+  if (error) {
+    console.error("Error updating product:", error)
+    return { data: null, error }
+  }
+
+  return { data: data?.[0] || null, error: null }
+}
+
+// Voeg deze functie toe om producten met categorie informatie op te halen
+export async function fetchProductsWithCategories() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      category:categories(*)
+    `)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching products with categories:", error)
+    return { data: [], error }
+  }
+
+  return { data: data || [], error: null }
 }
 
 export async function deleteProduct(id: string) {
