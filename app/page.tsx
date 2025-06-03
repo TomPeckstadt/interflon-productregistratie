@@ -25,6 +25,7 @@ import {
   fetchProductsWithCategories,
   type Product,
   type RegistrationEntry,
+  fetchProducts,
 } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -211,9 +212,8 @@ export default function ProductRegistrationApp() {
         return
       }
 
-      const [usersResult, productsResult, locationsResult, purposesResult, registrationsResult] = await Promise.all([
+      const [usersResult, locationsResult, purposesResult, registrationsResult] = await Promise.all([
         fetchUsers(),
-        fetchProductsWithCategories(),
         fetchLocations(),
         fetchPurposes(),
         fetchRegistrations(),
@@ -226,12 +226,11 @@ export default function ProductRegistrationApp() {
         }
       }
 
-      if (productsResult.data) setProducts(productsResult.data)
       if (locationsResult.data) setLocations(locationsResult.data)
       if (purposesResult.data) setPurposes(purposesResult.data)
       if (registrationsResult.data) setEntries(registrationsResult.data)
 
-      // Load categories with error handling
+      // Load categories first
       try {
         const categoriesResult = await fetchCategories()
         if (categoriesResult.data) {
@@ -240,6 +239,31 @@ export default function ProductRegistrationApp() {
       } catch (error) {
         console.warn("Could not load categories:", error)
         setCategories([])
+      }
+
+      // Then load products with categories
+      try {
+        const productsResult = await fetchProductsWithCategories()
+        if (productsResult.data) {
+          setProducts(productsResult.data)
+        } else {
+          // Fallback to regular products if categories don't work
+          const fallbackResult = await fetchProducts()
+          if (fallbackResult.data) {
+            setProducts(fallbackResult.data)
+          }
+        }
+      } catch (error) {
+        console.warn("Could not load products with categories, trying fallback:", error)
+        try {
+          const fallbackResult = await fetchProducts()
+          if (fallbackResult.data) {
+            setProducts(fallbackResult.data)
+          }
+        } catch (fallbackError) {
+          console.error("Could not load products at all:", fallbackError)
+          setProducts([])
+        }
       }
 
       setConnectionStatus("connected")
@@ -256,14 +280,20 @@ export default function ProductRegistrationApp() {
     console.log("Setting up realtime subscriptions...")
 
     try {
-      const unsubscribeProducts = subscribeToProducts((updatedProducts) => {
+      const unsubscribeProducts = subscribeToProducts(async (updatedProducts) => {
         console.log("Products subscription update received:", updatedProducts.length)
-        // Reload products with categories when products change
-        fetchProductsWithCategories().then((result) => {
+        // Try to reload products with categories, fallback to regular products
+        try {
+          const result = await fetchProductsWithCategories()
           if (result.data) {
             setProducts(result.data)
+          } else {
+            setProducts(updatedProducts)
           }
-        })
+        } catch (error) {
+          console.warn("Error reloading products with categories:", error)
+          setProducts(updatedProducts)
+        }
       })
 
       const unsubscribeUsers = subscribeToUsers((updatedUsers) => {

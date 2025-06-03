@@ -137,20 +137,32 @@ export async function updateProduct(id: string, product: Partial<Product>) {
 // Voeg deze functie toe om producten met categorie informatie op te halen
 export async function fetchProductsWithCategories() {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*)
-    `)
-    .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching products with categories:", error)
-    return { data: [], error }
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      // If categories table doesn't exist, fall back to regular products
+      if (error.message && error.message.includes('relation "public.categories" does not exist')) {
+        console.warn("Categories table doesn't exist, falling back to regular products")
+        return await fetchProducts()
+      }
+      console.error("Error fetching products with categories:", error)
+      return { data: [], error }
+    }
+
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error("Unexpected error fetching products with categories:", error)
+    // Fallback to regular products
+    return await fetchProducts()
   }
-
-  return { data: data || [], error: null }
 }
 
 export async function deleteProduct(id: string) {
